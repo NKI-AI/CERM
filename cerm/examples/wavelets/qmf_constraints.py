@@ -51,7 +51,7 @@ class QMFConstraint(Constraint):
 
     def __init__(self, num_filters: int, order: int) -> None:
         """
-        Initialize parameters spherical constraints
+        Initialize dimension and number of low pass filters
 
         Parameters
         ----------
@@ -69,7 +69,7 @@ class QMFConstraint(Constraint):
 
     def __call__(self, lpf: Tensor) -> Tensor:
         """
-        Evaluate zero finding map F defining the wavelet manifold
+        Evaluate QMF conditions
 
         Parameters
         ----------
