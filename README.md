@@ -1,3 +1,3 @@
-# CERM: constrained empirical risk minimization
+# CERM: general implementation constrained empirical risk minimization
 
-General implementation constrained empirical risk minimization
+Code accompanying our NeurIPS 2023 submission "Constrained Empirical Risk Minimization"
