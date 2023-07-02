@@ -53,7 +53,7 @@ class ConstrainedManifold:
         """Dimension of manifold defined by constraint"""
         return self.__vars_and_coords
 
-    def refine_point(self, x0: Tensor, max_attempts: int = 640) -> Tensor:
+    def refine_point(self, x0: Tensor, max_attempts: int = 64) -> Tensor:
         """
         Refine approximation of point on manifold changing coordinates if necessary
 
