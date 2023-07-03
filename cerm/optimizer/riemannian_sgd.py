@@ -6,7 +6,7 @@ from typing import List
 from torch import Tensor
 
 from cerm.constraints.manifold import ConstrainedManifold
-from cerm.network.constrained_module import ConstrainedParameter
+from cerm.network.constrained_params import ConstrainedParameter
 
 
 class RSGD(torch.optim.Optimizer):
@@ -16,7 +16,6 @@ class RSGD(torch.optim.Optimizer):
     def __init__(
         self,
         params: List[ConstrainedParameter],
-        constrained_manifolds: List[ConstrainedManifold],
         lr: float = 1e-03,
         weight_decay: float = 0.0,
     ) -> None:
@@ -42,16 +41,12 @@ class RSGD(torch.optim.Optimizer):
         defaults = {"lr": lr, "weight_decay": weight_decay}
         super(RSGD, self).__init__(params, defaults)
 
-        self.constrained_manifolds = constrained_manifolds
-
     # @_use_grad_for_differentiable
     def step(self, closure=None) -> None:
         """Take gradient descent step using Riemannian SGD"""
         assert closure == None, "Closures are not yet supported"
 
-        for group, manifold in zip(self.param_groups, self.constrained_manifolds):
-
-            assert len(group["params"]) == 1, "only one list of parameters is supported"
+        for group in self.param_groups:
 
             for params in group["params"]:
 
@@ -59,6 +54,8 @@ class RSGD(torch.optim.Optimizer):
                 current_state = self.state[params]
                 if len(current_state) == 0:
                     current_state["step"] = 0
+
+                manifold = params.constrained_manifold
 
                 # Compute gradient on riemannian submanifold
                 if len(params.grad) > 0:
