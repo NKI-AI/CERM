@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 
 from cerm.constraints.constraints import Constraint
-from cerm.network.constrained_module import ConstrainedModule, ConstrainedParameter
+from cerm.network.constrained_params import ConstrainedParameter
 
 
 class SphericalConstraint(Constraint):
@@ -43,7 +43,7 @@ class SphericalConstraint(Constraint):
         return torch.sum(params**2, dim=-1).unsqueeze(1) - 1
 
 
-class SCLinear(ConstrainedModule):
+class SCLinear(torch.nn.Module):
 
     """Example implementation constrained linear layer"""
 
@@ -60,22 +60,20 @@ class SCLinear(ConstrainedModule):
         bias: bool
             bias
         """
+        super(SCLinear, self).__init__()
+
         self.dim_in = dim_in
         self.dim_out = dim_out
 
-        # Initialize constraint
-        super(SCLinear, self).__init__(SphericalConstraint(self.dim_out, self.dim_in))
-
-        # TODO: fix proper initialization
-
-        # Weights linear operator
+        # Initialize weights linear operator
         params = torch.rand(self.dim_out, self.dim_in)
-        self.params = ConstrainedParameter(
-            torch.einsum(
-                "ij, i-> ij ", params, 1 / torch.sqrt(torch.sum(params**2, dim=-1))
-            )
+        params = torch.einsum(
+            "ij, i-> ij ", params, 1 / torch.sqrt(torch.sum(params**2, dim=-1))
         )
-        self.constrained_manifold.refine_point(self.params)
+        self.params = ConstrainedParameter(
+            init_params=params,
+            constraint=SphericalConstraint(self.dim_out, self.dim_in),
+        )
 
         # Bias
         if bias:
@@ -131,14 +129,16 @@ class MLP(torch.nn.Module):
         # Input to latent dimension
         layers = torch.nn.ModuleList([])
         layers.append(SCLinear(self.dim_in, self.dim_latent))
+        layers.append(torch.nn.LayerNorm(self.dim_latent))
+        layers.append(torch.nn.GELU())
 
         # Hidden layers
         for layer_idx in range(self.num_hidden_layers):
             layers.append(SCLinear(self.dim_latent, self.dim_latent))
-            layers.append(torch.nn.BatchNorm1d(self.dim_latent))
+            layers.append(torch.nn.LayerNorm(self.dim_latent))
             layers.append(torch.nn.GELU())
 
-        # Output
+        # Unconstrained output layer
         layers.append(torch.nn.Linear(self.dim_latent, self.dim_out))
 
         self.layers = torch.nn.Sequential(*layers)

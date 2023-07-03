@@ -5,12 +5,12 @@ import torch
 from typing import Tuple, Dict, List
 from torch import Tensor
 
-from cerm.network.constrained_module import ConstrainedModule, ConstrainedParameter
+from cerm.network.constrained_params import ConstrainedParameter
 from cerm.examples.wavelets import dwt
 from cerm.examples.wavelets.qmf_constraints import QMFConstraint
 
 
-class WaveletBaseLayer(ConstrainedModule):
+class WaveletBaseLayer(torch.nn.Module):
     """Base class for n-dimensional wavelet layer"""
 
     def __init__(
@@ -40,6 +40,8 @@ class WaveletBaseLayer(ConstrainedModule):
         periodic_signal: bool
             indicates whether the input signal is periodic
         """
+        super(WaveletBaseLayer, self).__init__()
+
         # Dimensions
         self.dim = dim
         self.order = order
@@ -52,12 +54,10 @@ class WaveletBaseLayer(ConstrainedModule):
 
         # Initialize constraint
         num_filters = self.dim * num_filters_per_channel * num_channels
-        super(WaveletBaseLayer, self).__init__(QMFConstraint(num_filters, self.order))
-
-        # Initialize parameters
         self.dim_filter = 2 * self.order - 1
-        self.lpf = ConstrainedParameter(torch.rand(num_filters, self.dim_filter))
-        self.constrained_manifold.refine_point(self.lpf)
+        self.lpf = ConstrainedParameter(
+            constraint=QMFConstraint(num_filters, self.order)
+        )
 
 
 class WaveletLayer1d(WaveletBaseLayer):
