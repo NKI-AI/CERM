@@ -27,25 +27,29 @@ The CERM framework preserves the usual flow of building models in PyTorch as muc
 
 ### Using constrained parameters
 
-We provide an abstract class `Constraints` whose implementation should be completed by the user. The user is only required to implement their specific constraint of interest. To efficiently deal with such cases, i.e., apply one constraint to different groups of parameters, where each group has the same dimensionality, we require the user to provide the following data to the constructor of our `Constraint` class:
+We provide an abstract class `Constraints` whose implementation should be completed by the user. The user is only required to implement their specific constraint of interest. 
+A specific constraint can be applied to different groups of parameters, assuming each group has the same dimensionality. We require the user to provide the following data to the constructor of our `Constraint` class:
 >- ***num_params: int***
 >    - dimension input of zero map
 >- ***num_eqs: int***
 >    - number of equations
 
-Next, we build our model as usual, with the only difference that we use `ConstrainedParameter` instead of `torch.nn.Parameter` where our parameters are constrained. The constructor of `ConstrainedParameter` requires the following data:
+Next, we build our model as usual extending the ``torch.nn.Module`` class, 
+with the only difference that we use `ConstrainedParameter` instead of `torch.nn.Parameter` in the places where we wish to use constraints.
+The constructor of `ConstrainedParameter` requires the following data:
 
 >- `constraint`: an instance of the `Constraint` class.
 >- `init_params` (optional): initial guess parameters.
 
-The constructor of the `ConstrainedParameter` will refine the initial guess and constrain it to the constrained manifold. A constrained parameter is explicitly constructed using
-
-```
+The constructor of the `ConstrainedParameter` will refine the initial guess and constrain it to the constrained manifold. A constrained parameter is 
+explicitly constructed using
+```python
+    from cerm.network.constrained_params import ConstrainedParameter
     constrained_params = ContrainedParameter(constraint=constraint, init_params=params)
 ```
 
 A simple toy example can be found in `/CERM/cerm/examples/spherical_constraint.py`
-A more elaborate examples implemented learnable wavelet layers can be found in `/CERM/cerm/examples/wavelets.py`
+A more elaborate example implementing learnable wavelet layers can be found in `/CERM/cerm/examples/wavelets.py`
 
 ## Example: wavelets
 
