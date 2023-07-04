@@ -1,11 +1,12 @@
-"""Implementation Newton's method to find points on constraint manifold"""
+"""Implementation Newton's method to find points on constraint manifold."""
 
 import logging
+from typing import Callable, List, Tuple, Union
+
 import numpy as np
 import torch
-
-from typing import Tuple, Union, List, Callable
 from torch import Tensor
+
 from cerm.constraints.constraints import Constraint
 from cerm.constraints.coordinate_utils import VarsAndCoords
 
@@ -15,8 +16,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 class Newton:
-
-    """Newton's method for solving overdetermined system of equations"""
+    """Newton's method for solving overdetermined system of equations."""
 
     def __init__(
         self,
@@ -26,8 +26,7 @@ class Newton:
         group_criterium: str = "max",
         param_criterium: str = "l1",
     ) -> None:
-        """
-        Use Newton's method to find a solution of f(x) = 0
+        """Use Newton's method to find a solution of f(x) = 0.
 
         Parameters
         ----------
@@ -55,8 +54,7 @@ class Newton:
 
     @staticmethod
     def _get_criterium(criterium: str, dim: int) -> Callable:
-        """
-        Determine criterium to assess quality zero
+        """Determine criterium to assess quality zero.
 
         Parameters
         ----------
@@ -77,15 +75,12 @@ class Newton:
         elif criterium == "l2":
             return lambda y: torch.sum(y**2, dim=dim)
         else:
-            raise NotImplementedError(
-                f"Prescribed criterium {criterium} does not exist"
-            )
+            raise NotImplementedError(f"Prescribed criterium {criterium} does not exist")
 
     def _singular_groups(
         self, x: Tensor, constraint: Constraint, vars_and_coords: VarsAndCoords
     ) -> List[int]:
-        """
-        Find indices of parameter groups that not converged or are singular
+        """Find indices of parameter groups that not converged or are singular.
 
         Parameters
         ----------
@@ -133,8 +128,7 @@ class Newton:
     def __call__(
         self, x0: Tensor, constraint: Constraint, vars_and_coords: VarsAndCoords
     ) -> Tensor:
-        """
-        Find zero in neighborhood of initial guess
+        """Find zero in neighborhood of initial guess.
 
         Parameters
         ----------
@@ -155,7 +149,6 @@ class Newton:
         num_eqs = constraint.num_eqs
 
         with torch.no_grad():
-
             # Initialization
             num_iter = 0
             x = x0.clone()
@@ -163,7 +156,6 @@ class Newton:
 
             # Newton iterations
             while self.eval_error(fx) > self.tol_zero and num_iter <= self.max_iter:
-
                 dfx = constraint.eval_jac(x)[
                     vars_and_coords.vars_jac["params_dim"],
                     vars_and_coords.vars_jac["row_dim"],
@@ -171,9 +163,7 @@ class Newton:
                 ].view(num_groups, num_eqs, num_eqs)
 
                 try:
-                    solved_units = (
-                        torch.linalg.solve(dfx, fx.unsqueeze(-1)).squeeze(-1).flatten()
-                    )
+                    solved_units = torch.linalg.solve(dfx, fx.unsqueeze(-1)).squeeze(-1).flatten()
                     x[
                         vars_and_coords.vars_arr["params_dim"],
                         vars_and_coords.vars_arr["row_dim"],
@@ -195,9 +185,7 @@ class Newton:
             if singular_group_idx:
                 logger.warning("Singular parameter groups detected")
                 if curr_error < self.tol_zero:
-                    logger.info(
-                        f"Newton converged to singular point: error = {curr_error}"
-                    )
+                    logger.info(f"Newton converged to singular point: error = {curr_error}")
                 else:
                     logger.info(f"Newton did not converge: error = {curr_error}")
             else:

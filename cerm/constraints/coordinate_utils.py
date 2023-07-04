@@ -1,15 +1,14 @@
-"""Contains custom objects and tuples"""
+"""Contains custom objects and tuples."""
+
+from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
-
-from typing import List, Tuple, Dict
 from torch import Tensor
 
 
 class VarsAndCoords:
-
-    """Class to split input to zero map into variables and graph coordinates"""
+    """Class to split input to zero map into variables and graph coordinates."""
 
     def __init__(
         self,
@@ -25,11 +24,10 @@ class VarsAndCoords:
         dim_manifold: int,
         num_equations: int,
     ) -> None:
-        """
-        Initialize indices defining a split of the input into variables and coordinates.
-        In the context of the manifold we interpret the vars (variables) as points on the manifold
-        and coords (coordinates) as the associated coordinates in a (graph) chart. This
-        interpretation arises from the implicit function theorem.
+        """Initialize indices defining a split of the input into variables and coordinates. In the
+        context of the manifold we interpret the vars (variables) as points on the manifold and
+        coords (coordinates) as the associated coordinates in a (graph) chart. This interpretation
+        arises from the implicit function theorem.
 
         Parameters
         ----------
@@ -76,8 +74,7 @@ class VarsAndCoords:
         self.coords_jac_inv_chart = coords_jac_inv_chart
 
     def update(self, params_list: List[int]) -> None:
-        """
-        Choose new coordinates and variables for prescribed params.
+        """Choose new coordinates and variables for prescribed params.
 
         Parameters
         ----------
@@ -102,12 +99,9 @@ class VarsAndCoords:
 
         # update all the params indexes to the new ones from reshuffled:
         for idx, params_idx in enumerate(params_list):
-
             # Update list of chosen variables and coordinates
             self.vars_per_group[params_idx] = reshuffled_vars_coords.vars_per_group[idx]
-            self.coords_per_group[params_idx] = reshuffled_vars_coords.coords_per_group[
-                idx
-            ]
+            self.coords_per_group[params_idx] = reshuffled_vars_coords.coords_per_group[idx]
 
             # Variables and coordinates params
             self.vars_arr["row_dim"][
@@ -128,9 +122,7 @@ class VarsAndCoords:
                 idx * stepsize_vars_jac : (idx + 1) * stepsize_vars_jac
             ]
             self.coords_jac["col_dim"][
-                params_idx
-                * stepsize_coords_jac : (params_idx + 1)
-                * stepsize_coords_jac
+                params_idx * stepsize_coords_jac : (params_idx + 1) * stepsize_coords_jac
             ] = reshuffled_vars_coords.coords_jac["col_dim"][
                 idx * stepsize_coords_jac : (idx + 1) * stepsize_coords_jac
             ]
@@ -141,9 +133,7 @@ class VarsAndCoords:
                 * stepsize_coords_jac_inv_chart : (params_idx + 1)
                 * stepsize_coords_jac_inv_chart
             ] = reshuffled_vars_coords.coords_jac_inv_chart["row_dim"][
-                idx
-                * stepsize_coords_jac_inv_chart : (idx + 1)
-                * stepsize_coords_jac_inv_chart
+                idx * stepsize_coords_jac_inv_chart : (idx + 1) * stepsize_coords_jac_inv_chart
             ]
 
             # Variables jacobian inverse chart
@@ -152,9 +142,7 @@ class VarsAndCoords:
                 * stepsize_vars_jac_inv_chart : (params_idx + 1)
                 * stepsize_vars_jac_inv_chart
             ] = reshuffled_vars_coords.vars_jac_inv_chart["row_dim"][
-                idx
-                * stepsize_vars_jac_inv_chart : (idx + 1)
-                * stepsize_vars_jac_inv_chart
+                idx * stepsize_vars_jac_inv_chart : (idx + 1) * stepsize_vars_jac_inv_chart
             ]
 
 
@@ -164,8 +152,7 @@ def init_vars_and_coords(
     num_equations: int,
     num_params_groups: int,
 ) -> VarsAndCoords:
-    """
-    Choose coordinates (columns) randomly to define a chart.
+    """Choose coordinates (columns) randomly to define a chart.
 
     Parameters
     ----------
@@ -191,18 +178,14 @@ def init_vars_and_coords(
     ]
 
     # Select which indices will be interpreted as coordinates
-    coords_per_group = [
-        [idx for idx in range(dim_in) if idx not in var] for var in vars_per_group
-    ]
+    coords_per_group = [[idx for idx in range(dim_in) if idx not in var] for var in vars_per_group]
 
     # Next, we construct indices to split up the jacobian
 
     # For the column indices we repeat the variables, as chosen above, num_equations times because
     # we want to extract these variables from the jacobian for each row.
     vars_jac = {}
-    vars_jac["col_dim"] = (
-        torch.tensor(vars_per_group).repeat(1, num_equations).flatten()
-    )
+    vars_jac["col_dim"] = torch.tensor(vars_per_group).repeat(1, num_equations).flatten()
 
     # To create the row indices, we first arange num_equations since that is the number of rows.
     # Afterwards, we repeat it num_variables=num_equations times since we want a row index for each
@@ -228,9 +211,7 @@ def init_vars_and_coords(
     # Indices jacobian interpreted as coordinates on wavelet manifolds -- same as above, but then
     # for the coordinates
     coords_jac = {}
-    coords_jac["col_dim"] = (
-        torch.tensor(coords_per_group).repeat(1, num_equations).flatten()
-    )
+    coords_jac["col_dim"] = torch.tensor(coords_per_group).repeat(1, num_equations).flatten()
 
     coords_jac["row_dim"] = (
         torch.arange(num_equations)
@@ -275,11 +256,7 @@ def init_vars_and_coords(
         .flatten()
     )
     coords_jac_inv_chart["row_dim"] = (
-        torch.tensor(coords_per_group)
-        .flatten()
-        .unsqueeze(-1)
-        .repeat(1, dim_manifold)
-        .flatten()
+        torch.tensor(coords_per_group).flatten().unsqueeze(-1).repeat(1, dim_manifold).flatten()
     )
     coords_jac_inv_chart["params_dim"] = (
         torch.arange(num_params_groups)
@@ -297,11 +274,7 @@ def init_vars_and_coords(
         .flatten()
     )
     vars_jac_inv_chart["row_dim"] = (
-        torch.tensor(vars_per_group)
-        .flatten()
-        .unsqueeze(-1)
-        .repeat(1, dim_manifold)
-        .flatten()
+        torch.tensor(vars_per_group).flatten().unsqueeze(-1).repeat(1, dim_manifold).flatten()
     )
     vars_jac_inv_chart["params_dim"] = (
         torch.arange(num_params_groups)

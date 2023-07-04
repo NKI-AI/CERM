@@ -1,10 +1,10 @@
 """Tools for computing points and gradients on the wavelet manifold."""
 
 import logging
+from typing import List, Tuple, Union
+
 import numpy as np
 import torch
-
-from typing import Tuple, Union, List
 from torch import Tensor
 
 from cerm.constraints.constraints import Constraint
@@ -15,43 +15,11 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def regularity_equations(
-    order: int, moments: int = 1, device: str = "cpu"
-) -> Tuple[Tensor, Tensor]:
-    """
-    Construct linear operator associated to H'(1/2) = 0
-
-    Parameters
-    ----------
-    order: List[int, int]
-        order of lpf
-    moments: int
-        number of moments to vanish
-    device: str
-        device on which operators are stored
-
-    Returns
-    ------
-    operator_order_root: float-valued PyTorch tensor of size [2m-1]
-        linear operator associated to H'(1/2) = 0
-    """
-    operator_order_root = torch.arange(1 - order, order).float().to(device)
-
-    if order % 2 == 1:
-        operator_order_root[slice(1, 2 * order - 2, 2)] *= -1
-    else:
-        operator_order_root[slice(0, 2 * order - 1, 2)] *= -1
-
-    return operator_order_root
-
-
 class QMFConstraint(Constraint):
-
-    """Implementation quadratic mirror filter (QMF) constraints"""
+    """Implementation quadratic mirror filter (QMF) constraints."""
 
     def __init__(self, num_filters: int, order: int) -> None:
-        """
-        Initialize dimension and number of low pass filters
+        """Initialize dimension and number of low pass filters.
 
         Parameters
         ----------
@@ -65,11 +33,10 @@ class QMFConstraint(Constraint):
         num_eqs = order + 1
         dim_filter = 2 * order - 1
 
-        super(QMFConstraint, self).__init__(dim_filter, num_eqs, num_filters)
+        super().__init__(dim_filter, num_eqs, num_filters)
 
     def __call__(self, lpf: Tensor) -> Tensor:
-        """
-        Evaluate QMF conditions
+        """Evaluate QMF conditions.
 
         Parameters
         ----------
@@ -82,9 +49,7 @@ class QMFConstraint(Constraint):
             zero finding map F evaluated at low pass filter
         """
         # Compute h * h_flip
-        lpf_conv_lpf_flip = circular_conv(
-            lpf, torch.flip(lpf, dims=[-1]), self.num_spatial_dim
-        )
+        lpf_conv_lpf_flip = circular_conv(lpf, torch.flip(lpf, dims=[-1]), self.num_spatial_dim)
 
         # Extract positive even indices
         even_idx = slice(2 * (self.order - 1), 4 * (self.order - 1) + 1, 2)

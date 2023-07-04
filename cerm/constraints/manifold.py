@@ -1,15 +1,15 @@
 """Tools for computing points and gradients on the constrained manifold."""
 
 import logging
+from copy import deepcopy
+from typing import List, Tuple, Union
+
 import numpy as np
 import torch
-
-from typing import Tuple, Union, List
 from torch import Tensor
-from copy import deepcopy
 
-from cerm.constraints.constraints import Constraint
 from cerm.constraints import coordinate_utils
+from cerm.constraints.constraints import Constraint
 from cerm.constraints.newton import Newton
 
 # Module logger
@@ -18,12 +18,10 @@ logging.basicConfig(level=logging.INFO)
 
 
 class ConstrainedManifold:
-
-    """Class representing a manifold defined by a constraint"""
+    """Class representing a manifold defined by a constraint."""
 
     def __init__(self, constraint: Constraint) -> None:
-        """
-        Initialize constraint defining the manifold
+        """Initialize constraint defining the manifold.
 
         Parameters
         ----------
@@ -45,17 +43,16 @@ class ConstrainedManifold:
 
     @property
     def dim_manifold(self) -> int:
-        """Dimension of manifold defined by constraint"""
+        """Dimension of manifold defined by constraint."""
         return self.__dim_manifold
 
     @property
     def vars_and_coords(self) -> coordinate_utils.VarsAndCoords:
-        """Dimension of manifold defined by constraint"""
+        """Dimension of manifold defined by constraint."""
         return self.__vars_and_coords
 
     def refine_point(self, x0: Tensor, max_attempts: int = 64) -> Tensor:
-        """
-        Refine approximation of point on manifold changing coordinates if necessary
+        """Refine approximation of point on manifold changing coordinates if necessary.
 
         Parameters
         ----------
@@ -82,7 +79,6 @@ class ConstrainedManifold:
         x[groups_not_converged] = x0[groups_not_converged]
 
         while groups_not_converged and num_iter <= max_attempts:
-
             logger.info(f"Attempt: {num_iter}")
 
             self.__vars_and_coords.update(
@@ -99,9 +95,8 @@ class ConstrainedManifold:
 
         return x, groups_not_converged, min_singular_val
 
-    def eval_jac_inv_chart(self, x: Tensor) -> Tensor:
-        """
-        Evaluate derivative of parameterization manifold (inverse chart).
+    def eval_jac_inv_chart(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        """Evaluate derivative of parameterization manifold (inverse chart).
 
         Parameters
         ----------
@@ -138,9 +133,7 @@ class ConstrainedManifold:
         )
 
         # Compute derivative inverse chart
-        jac_inv_chart = torch.zeros(num_groups, num_params, dim_manifold).to(
-            jac_zero_map.device
-        )
+        jac_inv_chart = torch.zeros(num_groups, num_params, dim_manifold).to(jac_zero_map.device)
 
         jac_inv_chart[
             vars_and_coords.vars_jac_inv_chart["params_dim"],
@@ -164,8 +157,7 @@ class ConstrainedManifold:
 
     @staticmethod
     def riemann_metric(jac_inv_chart: Tensor) -> Tensor:
-        """
-        Evaluate riemannian metric at point on manifold.
+        """Evaluate riemannian metric at point on manifold.
 
         Parameters
         ----------
@@ -180,9 +172,8 @@ class ConstrainedManifold:
         # Note: only need to compute and store upper diagonal part
         return torch.transpose(jac_inv_chart, 1, 2) @ jac_inv_chart
 
-    def gradient(self, x: Tensor) -> Tensor:
-        """
-        Compute gradient of objective on constrained manifold
+    def gradient(self, x: Tensor) -> tuple[Tensor, Tensor]:
+        """Compute gradient of objective on constrained manifold.
 
         Parameters
         ----------
@@ -206,7 +197,6 @@ class ConstrainedManifold:
 
         # Gradient on manifold
         with torch.no_grad():
-
             #  D(\tilde c)(lambda*) and Dc(lambda*)
             jac_graph_map, jac_inv_chart = self.eval_jac_inv_chart(x)
 

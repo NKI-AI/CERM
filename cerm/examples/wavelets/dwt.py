@@ -1,22 +1,19 @@
-"""Discrete wavelet transform (1d and separable 2d) and tools"""
+"""Discrete wavelet transform (1d and separable 2d) and tools."""
+
+import warnings
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import torch
-import warnings
-
-from typing import Tuple, List, Dict, Union
 from torch import Tensor
 
-from cerm.examples.wavelets.circular_conv import (
-    compute_order,
-    circular_conv,
-    circular_conv_periodic,
-)
+from cerm.examples.wavelets.circular_conv import (circular_conv,
+                                                  circular_conv_periodic,
+                                                  compute_order)
 
 
 def exponent_base_two(n: int) -> int:
-    """
-    Check whether n = 2^k for some k.
+    """Check whether n = 2^k for some k.
 
     Parameters
     ----------
@@ -35,8 +32,7 @@ def exponent_base_two(n: int) -> int:
 
 
 def determine_order_parity(init_dim: Tuple[int, int]) -> Tuple[bool, bool]:
-    """
-    Determine parity of order associated to dimensions
+    """Determine parity of order associated to dimensions.
 
     Parameters
     ----------
@@ -56,8 +52,7 @@ def compute_dims_dwt(
     order_filter: Union[int, Tuple[int, int]],
     num_levels: int,
 ) -> List[List[int]]:
-    """
-    Compute dimensions of coefficients in wavelet decomposition
+    """Compute dimensions of coefficients in wavelet decomposition.
 
     Parameters
     ----------
@@ -87,7 +82,6 @@ def compute_dims_dwt(
     dim_per_level = [torch.tensor(dim).int()]
 
     for level in range(num_levels):
-
         down_conv_order = []
 
         # Order after convolution with filter
@@ -97,9 +91,7 @@ def compute_dims_dwt(
         # Order after downsampling; depends on parity of order
         for dim_idx in range(num_spatial_dim):
             if order_conv[dim_idx] % 2 == 0:
-                down_conv_order.append(
-                    torch.div(order_conv[dim_idx], 2, rounding_mode="floor")
-                )
+                down_conv_order.append(torch.div(order_conv[dim_idx], 2, rounding_mode="floor"))
 
             else:
                 down_conv_order.append(
@@ -112,8 +104,7 @@ def compute_dims_dwt(
 
 
 def reshape_to_odd_size(signal: Tensor) -> Tensor:
-    """
-    Reshape signal to odd size if necessary so that two-sided order is well-defined.
+    """Reshape signal to odd size if necessary so that two-sided order is well-defined.
 
     Parameters
     ----------
@@ -131,8 +122,7 @@ def reshape_to_odd_size(signal: Tensor) -> Tensor:
 
 
 def repeat_filter(filter: Tensor, batch_size: int, spatial_dim_size: int) -> Tensor:
-    """
-    Repeat filter by adding a batch dimension and spatial dimension
+    """Repeat filter by adding a batch dimension and spatial dimension.
 
     Parameters
     ----------
@@ -157,8 +147,7 @@ def repeat_filter(filter: Tensor, batch_size: int, spatial_dim_size: int) -> Ten
 
 
 def high_pass_filter(lpf: Tensor) -> Tensor:
-    """
-    Construct Mallat's high pass filter for a given low pass filter.
+    """Construct Mallat's high pass filter for a given low pass filter.
 
     Parameters
     ----------
@@ -175,15 +164,12 @@ def high_pass_filter(lpf: Tensor) -> Tensor:
     m = int(compute_order(lpf.shape[-1]))
     k = torch.arange(2 - m, m + 1).to(lpf.device)
     hpf = torch.zeros(num_channels, num_filters, 2 * m + 1).to(lpf.device)
-    hpf[:, :, 2:] = torch.einsum(
-        "ijk, k -> ijk", torch.flip(lpf, dims=[-1]), (-1) ** (k - 1)
-    )
+    hpf[:, :, 2:] = torch.einsum("ijk, k -> ijk", torch.flip(lpf, dims=[-1]), (-1) ** (k - 1))
     return hpf
 
 
 def downsample_1d(coeffs: Tensor) -> Tensor:
-    """
-    Extract coefficients with even index from last dimension.
+    """Extract coefficients with even index from last dimension.
 
     Parameters
     ----------
@@ -205,8 +191,7 @@ def downsample_1d(coeffs: Tensor) -> Tensor:
 
 
 def downsample_1d_periodic(a: Tensor) -> Tensor:
-    """
-    Extract coefficients with even index from even-sized sequence
+    """Extract coefficients with even index from even-sized sequence.
 
     Parameters
     ----------
@@ -222,8 +207,7 @@ def downsample_1d_periodic(a: Tensor) -> Tensor:
 
 
 def upsample_1d(coeffs: Tensor) -> Tuple[int, Tensor]:
-    """
-    Upsample array by placing elements of sequence at even indices.
+    """Upsample array by placing elements of sequence at even indices.
 
     Parameters
     ----------
@@ -245,8 +229,7 @@ def upsample_1d(coeffs: Tensor) -> Tuple[int, Tensor]:
 
 
 def upsample_1d_periodic(a: Tensor) -> Tensor:
-    """
-    Upsample periodic array by placing elements of sequence at even indices.
+    """Upsample periodic array by placing elements of sequence at even indices.
 
     Parameters
     ----------
@@ -264,8 +247,7 @@ def upsample_1d_periodic(a: Tensor) -> Tensor:
 
 
 def down_conv1d(coeffs: Tensor, filter: Tensor, num_dim_conv: int = 1) -> Tensor:
-    """
-    Convolve coefficients with low or high pass filter in last dimension and down sample.
+    """Convolve coefficients with low or high pass filter in last dimension and down sample.
 
     Parameters
     ----------
@@ -284,11 +266,8 @@ def down_conv1d(coeffs: Tensor, filter: Tensor, num_dim_conv: int = 1) -> Tensor
     return downsample_1d(circular_conv(coeffs, filter, num_dim_conv))
 
 
-def down_conv1d_periodic(
-    coeffs: Tensor, filter: Tensor, num_dim_conv: int = 1
-) -> Tensor:
-    """
-    Convolve coefficients with low or high pass filter in last dimension and down sample.
+def down_conv1d_periodic(coeffs: Tensor, filter: Tensor, num_dim_conv: int = 1) -> Tensor:
+    """Convolve coefficients with low or high pass filter in last dimension and down sample.
 
     Parameters
     ----------
@@ -310,8 +289,7 @@ def down_conv1d_periodic(
 def conv_up_1d(
     coeffs: Tensor, filter: Tensor, order_up_parity: bool, num_dim_conv: int = 1
 ) -> Tensor:
-    """
-    Perform convolution with high or low pass filter and upsample.
+    """Perform convolution with high or low pass filter and upsample.
 
     Parameters
     ----------
@@ -350,8 +328,7 @@ def conv_up_1d(
 def conv_up_1d_periodic(
     coeffs: Tensor, filter: Tensor, order_up_parity: bool, num_dim_conv: int = 1
 ) -> Tensor:
-    """
-    Perform convolution with high or low pass filter and upsample.
+    """Perform convolution with high or low pass filter and upsample.
 
     Parameters
     ----------
@@ -375,8 +352,7 @@ def down_conv2d_separable(
     filter: Union[Tuple[Tensor, Tensor], List[Tensor]],
     periodic_signal: bool = False,
 ) -> Tensor:
-    """
-    Perform separable convolution in both spatial dimensions and down sample.
+    """Perform separable convolution in both spatial dimensions and down sample.
 
     Parameters
     ----------
@@ -417,8 +393,7 @@ def conv2d_up_separable(
     order_up_parity: Tuple[bool, bool],
     periodic_signal: bool = False,
 ) -> Tensor:
-    """
-    Up sample signal in both spatial dimensions and perform separable convolution
+    """Up sample signal in both spatial dimensions and perform separable convolution.
 
     Parameters
     ----------
@@ -463,8 +438,7 @@ def idwt1d(
     num_levels_no_detail: int = 0,
     periodic_signal: bool = False,
 ) -> List[Tensor]:
-    """
-    Inverse DWT 1d
+    """Inverse DWT 1d.
 
     Parameters
     ----------
@@ -501,7 +475,6 @@ def idwt1d(
 
     # idwt
     for level in range(num_levels):
-
         if level <= num_levels - 2:
             order_up_parity = compute_order(detail[level + 1].shape[-1]) % 2
         else:
@@ -526,8 +499,7 @@ def dwt1d(
     num_spatial_dim: int = 1,
     periodic_signal: bool = False,
 ) -> Tuple[List[Tensor], List[Tensor]]:
-    """
-    Discrete Wavelet Transform (1d)
+    """Discrete Wavelet Transform (1d)
 
     Parameters
     ----------
@@ -552,9 +524,7 @@ def dwt1d(
     num_channels = signal.shape[1]
     num_filters = lpf.shape[1]
     if periodic_signal and signal.shape[-1] % 2 == 1:
-        raise NotImplementedError(
-            "Only even-shaped signals are supported in periodic case"
-        )
+        raise NotImplementedError("Only even-shaped signals are supported in periodic case")
 
     if not periodic_signal and signal.shape[-1] % 2 == 0:
         raise NotImplementedError("Only odd-shaped non-periodic signals are supported")
@@ -569,9 +539,7 @@ def dwt1d(
     hpf_flip = hpf_flip.unsqueeze(0).repeat(batch_size, 1, 1, 1)
 
     # Repeat signal for each filter
-    signal = torch.permute(
-        signal.unsqueeze(0).repeat(num_filters, 1, 1, 1), (1, 2, 0, 3)
-    )
+    signal = torch.permute(signal.unsqueeze(0).repeat(num_filters, 1, 1, 1), (1, 2, 0, 3))
 
     # Preallocation
     approx = [signal]
@@ -585,7 +553,6 @@ def dwt1d(
 
     # DWT
     for level in range(num_levels):
-
         # Detail coefficients
         detail.insert(
             0,
@@ -606,13 +573,11 @@ def dwt1d(
 
 def dwt2d(
     signal: Tensor,
-    lpf: Tuple[Tensor, Tensor],
+    lpf: List[Tensor],
     num_levels: int,
-    num_spatial_dim: int = 2,
     periodic_signal: bool = False,
 ) -> Tuple[List[Tensor], Dict[str, List[Tensor]]]:
-    """
-    Discrete Wavelet Transform (2d)
+    """Discrete Wavelet Transform (2d)
 
     Parameters
     ----------
@@ -635,9 +600,7 @@ def dwt2d(
     # Dimensions
     num_filters = lpf[0].shape[1]
     if periodic_signal and (signal.shape[-1] % 2 == 1 or signal.shape[-2] % 2 == 1):
-        raise NotImplementedError(
-            "Only even-shaped signals are supported in periodic case"
-        )
+        raise NotImplementedError("Only even-shaped signals are supported in periodic case")
 
     if not periodic_signal and (signal.shape[-1] % 2 == 0 or signal.shape[-2] % 2 == 0):
         warnings.warn("Signal is even-shaped and not periodic; reshaping to odd-size")
@@ -646,9 +609,7 @@ def dwt2d(
     # Flippped low and high pass filters
     hpf_flip = [torch.flip(high_pass_filter(y), dims=[-1]) for y in lpf]
     lpf_flip = [torch.flip(y, dims=[-1]) for y in lpf]
-    lpf_flip = [
-        torch.nn.functional.pad(y, (1, 1)) for y in lpf_flip
-    ]  # match order of hpf
+    lpf_flip = [torch.nn.functional.pad(y, (1, 1)) for y in lpf_flip]  # match order of hpf
 
     # Repeat signal for each filter
     signal = signal.unsqueeze(2).repeat(1, 1, num_filters, 1, 1)
@@ -661,7 +622,6 @@ def dwt2d(
 
     # DWT
     for level in range(num_levels):
-
         # Detail coefficients: W12
         d12.insert(
             0,
@@ -696,13 +656,12 @@ def dwt2d(
 def idwt2d(
     init_approx: Tensor,
     detail: Dict[str, Tensor],
-    lpf: Tuple[Tensor, Tensor],
+    lpf: List[Tensor],
     parity_init_order: Tuple[int, int] = (1, 1),
     num_levels_no_detail: int = 0,
     periodic_signal: bool = False,
 ) -> List[Tensor]:
-    """
-    Inverse DWT (2d).
+    """Inverse DWT (2d).
 
     Parameters
     ----------
@@ -733,16 +692,13 @@ def idwt2d(
     # IDWT
     approx = [init_approx]
     for level in range(num_levels):
-
         if level <= num_levels - 2:
             order_up_parity = compute_order(detail["d12"][level + 1].shape[-2:]) % 2
         else:
             order_up_parity = parity_init_order
 
         approx.append(
-            conv2d_up_separable(
-                approx[-1], lpf, order_up_parity, periodic_signal=periodic_signal
-            )
+            conv2d_up_separable(approx[-1], lpf, order_up_parity, periodic_signal=periodic_signal)
             + conv2d_up_separable(
                 detail["d12"][level],
                 (lpf[0], hpf[1]),

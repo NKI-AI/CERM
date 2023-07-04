@@ -1,16 +1,15 @@
 """Implementation n-d circular convolution."""
 
+from typing import List, Union
+
+import numpy as np
 import torch
 import torch.fft as fft
-import numpy as np
-
-from typing import List, Union
 from torch import Tensor
 
 
 def compute_order(seq_shape: Union[int, torch.Size]) -> Union[int, np.ndarray]:
-    """
-    Determine order of two-sided multivariate sequence.
+    """Determine order of two-sided multivariate sequence.
 
     Parameters
     ----------
@@ -29,8 +28,7 @@ def compute_order(seq_shape: Union[int, torch.Size]) -> Union[int, np.ndarray]:
 
 
 def pad_zeros(seq: Tensor, num_zeros: Union[List[int], Tensor]) -> Tensor:
-    """
-    Pad two-sided sequence with zeros.
+    """Pad two-sided sequence with zeros.
 
     Parameters
     ----------
@@ -49,9 +47,7 @@ def pad_zeros(seq: Tensor, num_zeros: Union[List[int], Tensor]) -> Tensor:
 
     # Check dimensions are consistent
     if len(seq.shape) < num_dim:
-        raise ValueError(
-            "Number dimensions input sequence and number of zeros do not match!"
-        )
+        raise ValueError("Number dimensions input sequence and number of zeros do not match!")
 
     pad = []
     for dim_idx in range(num_dim):
@@ -61,9 +57,8 @@ def pad_zeros(seq: Tensor, num_zeros: Union[List[int], Tensor]) -> Tensor:
 
 
 def pad_periodic(a: Tensor, order_b: Tensor) -> Tensor:
-    """
-    Pad two-sided sequence a periodically for computation of a * b.
-    Here we assume that a is a two-sided sequence of even size.
+    """Pad two-sided sequence a periodically for computation of a * b. Here we assume that a is a
+    two-sided sequence of even size.
 
     Parameters
     ----------
@@ -83,9 +78,7 @@ def pad_periodic(a: Tensor, order_b: Tensor) -> Tensor:
     dim = tuple(range(num_batch_dim, num_batch_dim + num_dim))
 
     if torch.sum(torch.tensor(a.shape[num_batch_dim:]) % 2) > 0:
-        raise NotImplementedError(
-            "Periodic padding not yet supported for odd-sized arrays"
-        )
+        raise NotImplementedError("Periodic padding not yet supported for odd-sized arrays")
 
     for curr_dim in dim:
         # Move current dimension to last dimension
@@ -112,8 +105,7 @@ def pad_periodic(a: Tensor, order_b: Tensor) -> Tensor:
 
 
 def truncate(seq: Tensor, num_dim: int, min_idx: Tensor, max_idx: Tensor) -> Tensor:
-    """
-    Truncate two-sided sequence using prescribed bounds on indices
+    """Truncate two-sided sequence using prescribed bounds on indices.
 
     Parameters
     ----------
@@ -149,11 +141,8 @@ def truncate(seq: Tensor, num_dim: int, min_idx: Tensor, max_idx: Tensor) -> Ten
     return seq
 
 
-def fftshift(
-    seq: Tensor, num_dim: int, mode: str = "forward", in_place: bool = False
-) -> Tensor:
-    """
-    Map two-sided even sequence to equivalent one-sided form to apply DFT.
+def fftshift(seq: Tensor, num_dim: int, mode: str = "forward", in_place: bool = False) -> Tensor:
+    """Map two-sided even sequence to equivalent one-sided form to apply DFT.
 
     Parameters
     ----------
@@ -205,8 +194,7 @@ def fftshift(
 
 
 def circular_conv(a: Tensor, b: Tensor, num_dim: int) -> Tensor:
-    """
-    Compute circular convolution of multivariate sequences a and b.
+    """Compute circular convolution of multivariate sequences a and b.
 
     Parameters
     ----------
@@ -226,9 +214,7 @@ def circular_conv(a: Tensor, b: Tensor, num_dim: int) -> Tensor:
         raise ValueError("Dimensions of input sequences must match")
 
     if len(a.shape) < num_dim:
-        raise ValueError(
-            "Dimension input sequences and prescribed dimension do not match!"
-        )
+        raise ValueError("Dimension input sequences and prescribed dimension do not match!")
 
     # Determine two-sided orders of input sequences
     num_batch_dim = len(a.shape) - num_dim
@@ -250,8 +236,7 @@ def circular_conv(a: Tensor, b: Tensor, num_dim: int) -> Tensor:
 
 
 def circular_conv_periodic(a: Tensor, b: Tensor, num_dim: int) -> Tensor:
-    """
-    Compute periodic circular convolution of multivariate sequences a and b.
+    """Compute periodic circular convolution of multivariate sequences a and b.
 
     Parameters
     ----------
@@ -271,9 +256,7 @@ def circular_conv_periodic(a: Tensor, b: Tensor, num_dim: int) -> Tensor:
         raise ValueError("Dimensions of input sequences must match")
 
     if len(a.shape) < num_dim:
-        raise ValueError(
-            "Dimension input sequences and prescribed dimension do not match!"
-        )
+        raise ValueError("Dimension input sequences and prescribed dimension do not match!")
 
     # Determine two-sided orders of input sequences
     num_batch_dim = len(a.shape) - num_dim

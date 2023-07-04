@@ -1,11 +1,11 @@
-"""Implementation constraints"""
+"""Implementation constraints."""
 
-import logging
-import torch
 import abc
-
-from torch import Tensor
+import logging
 from typing import Callable
+
+import torch
+from torch import Tensor
 
 # Module logger
 logger = logging.getLogger(__name__)
@@ -13,17 +13,18 @@ logging.basicConfig(level=logging.INFO)
 
 
 class Constraint(abc.ABC):
-
-    """Class providing tools and utilities for handling constraints"""
+    """Class providing tools and utilities for handling constraints."""
 
     def __init__(self, num_params: int, num_eqs: int, num_groups: int) -> None:
         """
         Parameters
         ----------
         num_params: int
-            number of input parameters to zero mapo
+            number of input parameters to zero map
         num_eqs: int
             number of equations
+        num_groups: int
+            number of groups (groups to which we apply the same constraints)
         """
         if num_params <= num_eqs:
             raise ValueError("Number of params should exceed number of equations!")
@@ -38,23 +39,22 @@ class Constraint(abc.ABC):
 
     @property
     def num_params(self) -> int:
-        """Dimension domain zero map"""
+        """Dimension domain zero map."""
         return self.__num_params
 
     @property
     def num_eqs(self) -> int:
-        """Number of equations"""
+        """Number of equations."""
         return self.__num_eqs
 
     @property
     def num_groups(self) -> int:
-        """Dimension of output zero map"""
+        """Dimension of output zero map."""
         return self.__num_groups
 
     @abc.abstractmethod
     def __call__(self, x: Tensor) -> Tensor:
-        """
-        Evaluate zero map f
+        """Evaluate zero map f.
 
         Parameters
         ----------
@@ -68,8 +68,7 @@ class Constraint(abc.ABC):
         """
 
     def eval_jac(self, x: Tensor) -> Tensor:
-        """
-        Evaluate Jacobian zero map f
+        """Evaluate Jacobian zero map f.
 
         Parameters
         ----------

@@ -1,7 +1,6 @@
 """Minimal toy example: linear layer with rows constrained to sphere"""
 
 import torch
-
 from torch import Tensor
 
 from cerm.constraints.constraints import Constraint
@@ -9,12 +8,10 @@ from cerm.network.constrained_params import ConstrainedParameter
 
 
 class SphericalConstraint(Constraint):
-
-    """Simple example of constraining parameters to the unit sphere"""
+    """Simple example of constraining parameters to the unit sphere."""
 
     def __init__(self, num_groups: int, dim_params: int) -> None:
-        """
-        Initialize parameters spherical constraints
+        """Initialize parameters spherical constraints.
 
         Parameters
         ----------
@@ -24,11 +21,10 @@ class SphericalConstraint(Constraint):
             dimension of each parameter group
         """
         num_eqs = 1
-        super(SphericalConstraint, self).__init__(dim_params, num_eqs, num_groups)
+        super().__init__(dim_params, num_eqs, num_groups)
 
     def __call__(self, params: Tensor) -> Tensor:
-        """
-        Zero map associated to spherical constraint
+        """Zero map associated to spherical constraint.
 
         Parameters
         ----------
@@ -44,12 +40,10 @@ class SphericalConstraint(Constraint):
 
 
 class SCLinear(torch.nn.Module):
-
-    """Example implementation constrained linear layer"""
+    """Example implementation constrained linear layer."""
 
     def __init__(self, dim_in: int, dim_out: int, bias: bool = True) -> None:
-        """
-        Initialize constraint defining the manifold
+        """Initialize constraint defining the manifold.
 
         Parameters
         ----------
@@ -60,7 +54,7 @@ class SCLinear(torch.nn.Module):
         bias: bool
             bias
         """
-        super(SCLinear, self).__init__()
+        super().__init__()
 
         self.dim_in = dim_in
         self.dim_out = dim_out
@@ -82,8 +76,7 @@ class SCLinear(torch.nn.Module):
             self.register_parameter("bias", None)
 
     def forward(self, x: Tensor) -> Tensor:
-        """
-        Evaluate linear layer
+        """Evaluate linear layer.
 
         Parameters
         ----------
@@ -99,14 +92,10 @@ class SCLinear(torch.nn.Module):
 
 
 class MLP(torch.nn.Module):
+    """Constrained multilayer perceptron."""
 
-    """Constrained multilayer perceptron"""
-
-    def __init__(
-        self, dim_in: int, dim_latent: int, dim_out: int, num_hidden_layers: int
-    ) -> None:
-        """
-        Initialize parameters
+    def __init__(self, dim_in: int, dim_latent: int, dim_out: int, num_hidden_layers: int) -> None:
+        """Initialize parameters.
 
         Parameters
         ----------
@@ -119,7 +108,7 @@ class MLP(torch.nn.Module):
         num_hidden_layers: int
             number of hidden layers
         """
-        super(MLP, self).__init__()
+        super().__init__()
 
         self.dim_in = dim_in
         self.dim_latent = dim_latent

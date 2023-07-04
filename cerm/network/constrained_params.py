@@ -1,18 +1,17 @@
-"""Implementation constrained module"""
+"""Implementation constrained module."""
+
+import abc
+from typing import Dict, List, Tuple
 
 import torch
-import abc
-
-from typing import Tuple, Dict, List
+from torch import Tensor
 
 from cerm.constraints.constraints import Constraint
 from cerm.constraints.manifold import ConstrainedManifold
-from torch import Tensor
 
 
 class ConstrainedParameter(torch.nn.Parameter):
-
-    """Duplicate torch parameter to distinguish between constrained and unconstrained"""
+    """Duplicate torch parameter to distinguish between constrained and unconstrained."""
 
     def __new__(
         cls,
@@ -20,8 +19,7 @@ class ConstrainedParameter(torch.nn.Parameter):
         requires_grad: bool = True,
         constraint: Constraint = None,
     ):
-        """
-        Add functionality to torch parameter making it into a constrained parameter
+        """Add functionality to torch parameter making it into a constrained parameter.
 
         Parameters
         ----------
@@ -56,8 +54,7 @@ class ConstrainedParameter(torch.nn.Parameter):
 def split_params(
     model: torch.nn.Module,
 ) -> Tuple[List[torch.nn.Parameter], List[ConstrainedParameter]]:
-    """
-    Split parameters of model into constrained and unconstrained part
+    """Split parameters of model into constrained and unconstrained part.
 
     Parameters
     ----------

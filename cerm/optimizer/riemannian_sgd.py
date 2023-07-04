@@ -1,8 +1,8 @@
 """Custom optimizer constrained parameters: Riemannian gradient descent"""
 
-import torch
-
 from typing import List
+
+import torch
 from torch import Tensor
 
 from cerm.constraints.manifold import ConstrainedManifold
@@ -11,7 +11,7 @@ from cerm.network.constrained_params import ConstrainedParameter
 
 class RSGD(torch.optim.Optimizer):
 
-    """Custom optimizer for Riemannian Stochastic Gradient Descent"""
+    """Custom optimizer for Riemannian Stochastic Gradient Descent."""
 
     def __init__(
         self,
@@ -19,8 +19,7 @@ class RSGD(torch.optim.Optimizer):
         lr: float = 1e-03,
         weight_decay: float = 0.0,
     ) -> None:
-        """
-        Constructor
+        """Constructor.
 
         Parameters
         ----------
@@ -39,17 +38,15 @@ class RSGD(torch.optim.Optimizer):
             raise ValueError(f"Given weight decay {weight_decay} should be positive")
 
         defaults = {"lr": lr, "weight_decay": weight_decay}
-        super(RSGD, self).__init__(params, defaults)
+        super().__init__(params, defaults)
 
     # @_use_grad_for_differentiable
     def step(self, closure=None) -> None:
-        """Take gradient descent step using Riemannian SGD"""
+        """Take gradient descent step using Riemannian SGD."""
         assert closure == None, "Closures are not yet supported"
 
         for group in self.param_groups:
-
             for params in group["params"]:
-
                 # todo: set state (is this necessary?)
                 current_state = self.state[params]
                 if len(current_state) == 0:
@@ -83,9 +80,7 @@ class RSGD(torch.optim.Optimizer):
                 )
 
                 # Refine using Newton
-                new_params, groups_not_converged, _ = manifold.refine_point(
-                    params.clone()
-                )
+                new_params, groups_not_converged, _ = manifold.refine_point(params.clone())
                 if not groups_not_converged:
                     params.copy_(new_params)
 

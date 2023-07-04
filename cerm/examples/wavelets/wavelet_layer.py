@@ -1,17 +1,17 @@
-"""Implementation of wavelet layers"""
+"""Implementation of wavelet layers."""
+
+from typing import Dict, List, Tuple
 
 import torch
-
-from typing import Tuple, Dict, List
 from torch import Tensor
 
-from cerm.network.constrained_params import ConstrainedParameter
 from cerm.examples.wavelets import dwt
 from cerm.examples.wavelets.qmf_constraints import QMFConstraint
+from cerm.network.constrained_params import ConstrainedParameter
 
 
 class WaveletBaseLayer(torch.nn.Module):
-    """Base class for n-dimensional wavelet layer"""
+    """Base class for n-dimensional wavelet layer."""
 
     def __init__(
         self,
@@ -22,8 +22,7 @@ class WaveletBaseLayer(torch.nn.Module):
         num_channels: int = 1,
         periodic_signal: bool = False,
     ) -> None:
-        """
-        Initialize filters wavelet layer
+        """Initialize filters wavelet layer.
 
         Parameters
         ----------
@@ -40,7 +39,7 @@ class WaveletBaseLayer(torch.nn.Module):
         periodic_signal: bool
             indicates whether the input signal is periodic
         """
-        super(WaveletBaseLayer, self).__init__()
+        super().__init__()
 
         # Dimensions
         self.dim = dim
@@ -55,13 +54,11 @@ class WaveletBaseLayer(torch.nn.Module):
         # Initialize constraint
         num_filters = self.dim * num_filters_per_channel * num_channels
         self.dim_filter = 2 * self.order - 1
-        self.lpf = ConstrainedParameter(
-            constraint=QMFConstraint(num_filters, self.order)
-        )
+        self.lpf = ConstrainedParameter(constraint=QMFConstraint(num_filters, self.order))
 
 
 class WaveletLayer1d(WaveletBaseLayer):
-    """One-dimensional wavelet layer"""
+    """One-dimensional wavelet layer."""
 
     def __init__(
         self,
@@ -71,8 +68,7 @@ class WaveletLayer1d(WaveletBaseLayer):
         num_channels: int = 1,
         periodic_signal: bool = False,
     ) -> None:
-        """
-        Initialize filters 1d wavelet layer
+        """Initialize filters 1d wavelet layer.
 
         Parameters
         ----------
@@ -87,7 +83,7 @@ class WaveletLayer1d(WaveletBaseLayer):
         periodic_signal: bool
             indicates whether the input signal is periodic
         """
-        super(WaveletLayer1d, self).__init__(
+        super().__init__(
             1,
             order,
             num_levels_down,
@@ -97,8 +93,7 @@ class WaveletLayer1d(WaveletBaseLayer):
         )
 
     def group_lpfs(self) -> Tensor:
-        """
-        Reshape stacked low pass filters into shape [num_channels num_filters dim_filter]
+        """Reshape stacked low pass filters into shape [num_channels num_filters dim_filter]
 
         Returns
         -------
@@ -112,8 +107,7 @@ class WaveletLayer1d(WaveletBaseLayer):
         )
 
     def forward(self, x: Tensor) -> Tuple[List[Tensor], List[Tensor]]:
-        """
-        Compute wavelet decomposition of 1d signal
+        """Compute wavelet decomposition of 1d signal.
 
         Parameters
         ----------
@@ -139,9 +133,8 @@ class WaveletLayer1d(WaveletBaseLayer):
         detail: List[Tensor],
         parity_init_order: bool = None,
         num_levels_no_detail: int = 0,
-    ) -> Dict[str, Tensor]:
-        """
-        Wrapper inverse discrete wavelet transform
+    ) -> List[Tensor]:
+        """Wrapper inverse discrete wavelet transform.
 
         Parameters
         ----------
@@ -168,7 +161,7 @@ class WaveletLayer1d(WaveletBaseLayer):
 
 
 class WaveletLayerSeparable2d(WaveletBaseLayer):
-    """Two-dimensional separable wavelet layer"""
+    """Two-dimensional separable wavelet layer."""
 
     def __init__(
         self,
@@ -178,8 +171,7 @@ class WaveletLayerSeparable2d(WaveletBaseLayer):
         num_channels: int = 1,
         periodic_signal: bool = False,
     ) -> None:
-        """
-        Initialize filters 2d separable wavelet layer
+        """Initialize filters 2d separable wavelet layer.
 
         Parameters
         ----------
@@ -194,7 +186,7 @@ class WaveletLayerSeparable2d(WaveletBaseLayer):
         periodic_signal: bool
             indicates whether the input signal is periodic
         """
-        super(WaveletLayerSeparable2d, self).__init__(
+        super().__init__(
             2,
             order,
             num_levels_down,
@@ -203,13 +195,12 @@ class WaveletLayerSeparable2d(WaveletBaseLayer):
             periodic_signal=periodic_signal,
         )
 
-    def group_lpfs(self) -> Tuple[Tensor, Tensor]:
-        """
-        Separate stacked low pass filters into channel and spatial dimensions
+    def group_lpfs(self) -> List[Tensor]:
+        """Separate stacked low pass filters into channel and spatial dimensions.
 
         Returns
         -------
-        List[Tensor, Tensor]
+        List[Tensor]
             low pass filters separated into channel and spatial dimensions
         """
         return [
@@ -226,8 +217,7 @@ class WaveletLayerSeparable2d(WaveletBaseLayer):
         ]
 
     def forward(self, x: Tensor) -> Tuple[List[Tensor], Dict[str, List[Tensor]]]:
-        """
-        Compute wavelet decomposition of two-dimensional input tensor
+        """Compute wavelet decomposition of two-dimensional input tensor.
 
         Parameters
         ----------
@@ -255,8 +245,7 @@ class WaveletLayerSeparable2d(WaveletBaseLayer):
         parity_init_order: Tuple[bool, bool] = (1, 1),
         num_levels_no_detail: int = 0,
     ) -> Dict[str, Tensor]:
-        """
-        Wrapper around inverse dwt
+        """Wrapper around inverse dwt.
 
         Parameters
         ----------
