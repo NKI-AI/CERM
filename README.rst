@@ -43,13 +43,14 @@ Example paper: Autocontouring
 The examples from the paper can be run using the supplied ``hydra`` configs, e.g., 
 the models for the spleen can be trained using 
 
-```console
-python main.py --multirun 
-    task=spleen 
-    dataset.train_dir=/path/to/train_dir
-    dataset.val_dir=/path/to/val_dir
-    dataset.test_dir=/path/to/test_dir
-    network.decoder.order_wavelet=3,4,5,6,7,8      
+.. code-block:: console
+
+    python main.py --multirun 
+        task=spleen \
+        dataset.train_dir=/path/to/train_dir \
+        dataset.val_dir=/path/to/val_dir \
+        dataset.test_dir=/path/to/test_dir \
+        network.decoder.order_wavelet=3,4,5,6,7,8          
 ```
 We refer the reader to ``/CERM/cerm/examples/mra_segmentation/mra/configs``
 for configuration details, and what settings can be overridden, and 
