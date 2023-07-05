@@ -7,9 +7,11 @@ import numpy as np
 import torch
 from torch import Tensor
 
-from cerm.examples.wavelets.circular_conv import (circular_conv,
-                                                  circular_conv_periodic,
-                                                  compute_order)
+from cerm.examples.wavelets.circular_conv import (
+    circular_conv,
+    circular_conv_periodic,
+    compute_order,
+)
 
 
 def exponent_base_two(n: int) -> int:
@@ -91,7 +93,9 @@ def compute_dims_dwt(
         # Order after downsampling; depends on parity of order
         for dim_idx in range(num_spatial_dim):
             if order_conv[dim_idx] % 2 == 0:
-                down_conv_order.append(torch.div(order_conv[dim_idx], 2, rounding_mode="floor"))
+                down_conv_order.append(
+                    torch.div(order_conv[dim_idx], 2, rounding_mode="floor")
+                )
 
             else:
                 down_conv_order.append(
@@ -164,7 +168,9 @@ def high_pass_filter(lpf: Tensor) -> Tensor:
     m = int(compute_order(lpf.shape[-1]))
     k = torch.arange(2 - m, m + 1).to(lpf.device)
     hpf = torch.zeros(num_channels, num_filters, 2 * m + 1).to(lpf.device)
-    hpf[:, :, 2:] = torch.einsum("ijk, k -> ijk", torch.flip(lpf, dims=[-1]), (-1) ** (k - 1))
+    hpf[:, :, 2:] = torch.einsum(
+        "ijk, k -> ijk", torch.flip(lpf, dims=[-1]), (-1) ** (k - 1)
+    )
     return hpf
 
 
@@ -266,7 +272,9 @@ def down_conv1d(coeffs: Tensor, filter: Tensor, num_dim_conv: int = 1) -> Tensor
     return downsample_1d(circular_conv(coeffs, filter, num_dim_conv))
 
 
-def down_conv1d_periodic(coeffs: Tensor, filter: Tensor, num_dim_conv: int = 1) -> Tensor:
+def down_conv1d_periodic(
+    coeffs: Tensor, filter: Tensor, num_dim_conv: int = 1
+) -> Tensor:
     """Convolve coefficients with low or high pass filter in last dimension and down sample.
 
     Parameters
@@ -524,7 +532,9 @@ def dwt1d(
     num_channels = signal.shape[1]
     num_filters = lpf.shape[1]
     if periodic_signal and signal.shape[-1] % 2 == 1:
-        raise NotImplementedError("Only even-shaped signals are supported in periodic case")
+        raise NotImplementedError(
+            "Only even-shaped signals are supported in periodic case"
+        )
 
     if not periodic_signal and signal.shape[-1] % 2 == 0:
         raise NotImplementedError("Only odd-shaped non-periodic signals are supported")
@@ -539,7 +549,9 @@ def dwt1d(
     hpf_flip = hpf_flip.unsqueeze(0).repeat(batch_size, 1, 1, 1)
 
     # Repeat signal for each filter
-    signal = torch.permute(signal.unsqueeze(0).repeat(num_filters, 1, 1, 1), (1, 2, 0, 3))
+    signal = torch.permute(
+        signal.unsqueeze(0).repeat(num_filters, 1, 1, 1), (1, 2, 0, 3)
+    )
 
     # Preallocation
     approx = [signal]
@@ -600,7 +612,9 @@ def dwt2d(
     # Dimensions
     num_filters = lpf[0].shape[1]
     if periodic_signal and (signal.shape[-1] % 2 == 1 or signal.shape[-2] % 2 == 1):
-        raise NotImplementedError("Only even-shaped signals are supported in periodic case")
+        raise NotImplementedError(
+            "Only even-shaped signals are supported in periodic case"
+        )
 
     if not periodic_signal and (signal.shape[-1] % 2 == 0 or signal.shape[-2] % 2 == 0):
         warnings.warn("Signal is even-shaped and not periodic; reshaping to odd-size")
@@ -609,7 +623,9 @@ def dwt2d(
     # Flippped low and high pass filters
     hpf_flip = [torch.flip(high_pass_filter(y), dims=[-1]) for y in lpf]
     lpf_flip = [torch.flip(y, dims=[-1]) for y in lpf]
-    lpf_flip = [torch.nn.functional.pad(y, (1, 1)) for y in lpf_flip]  # match order of hpf
+    lpf_flip = [
+        torch.nn.functional.pad(y, (1, 1)) for y in lpf_flip
+    ]  # match order of hpf
 
     # Repeat signal for each filter
     signal = signal.unsqueeze(2).repeat(1, 1, num_filters, 1, 1)
@@ -698,7 +714,9 @@ def idwt2d(
             order_up_parity = parity_init_order
 
         approx.append(
-            conv2d_up_separable(approx[-1], lpf, order_up_parity, periodic_signal=periodic_signal)
+            conv2d_up_separable(
+                approx[-1], lpf, order_up_parity, periodic_signal=periodic_signal
+            )
             + conv2d_up_separable(
                 detail["d12"][level],
                 (lpf[0], hpf[1]),

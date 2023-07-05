@@ -75,7 +75,9 @@ class Newton:
         elif criterium == "l2":
             return lambda y: torch.sum(y**2, dim=dim)
         else:
-            raise NotImplementedError(f"Prescribed criterium {criterium} does not exist")
+            raise NotImplementedError(
+                f"Prescribed criterium {criterium} does not exist"
+            )
 
     def _singular_groups(
         self, x: Tensor, constraint: Constraint, vars_and_coords: VarsAndCoords
@@ -163,7 +165,9 @@ class Newton:
                 ].view(num_groups, num_eqs, num_eqs)
 
                 try:
-                    solved_units = torch.linalg.solve(dfx, fx.unsqueeze(-1)).squeeze(-1).flatten()
+                    solved_units = (
+                        torch.linalg.solve(dfx, fx.unsqueeze(-1)).squeeze(-1).flatten()
+                    )
                     x[
                         vars_and_coords.vars_arr["params_dim"],
                         vars_and_coords.vars_arr["row_dim"],
@@ -185,7 +189,9 @@ class Newton:
             if singular_group_idx:
                 logger.warning("Singular parameter groups detected")
                 if curr_error < self.tol_zero:
-                    logger.info(f"Newton converged to singular point: error = {curr_error}")
+                    logger.info(
+                        f"Newton converged to singular point: error = {curr_error}"
+                    )
                 else:
                     logger.info(f"Newton did not converge: error = {curr_error}")
             else:

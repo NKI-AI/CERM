@@ -94,7 +94,9 @@ class SCLinear(torch.nn.Module):
 class MLP(torch.nn.Module):
     """Constrained multilayer perceptron."""
 
-    def __init__(self, dim_in: int, dim_latent: int, dim_out: int, num_hidden_layers: int) -> None:
+    def __init__(
+        self, dim_in: int, dim_latent: int, dim_out: int, num_hidden_layers: int
+    ) -> None:
         """Initialize parameters.
 
         Parameters

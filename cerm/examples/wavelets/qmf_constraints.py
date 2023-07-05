@@ -49,7 +49,9 @@ class QMFConstraint(Constraint):
             zero finding map F evaluated at low pass filter
         """
         # Compute h * h_flip
-        lpf_conv_lpf_flip = circular_conv(lpf, torch.flip(lpf, dims=[-1]), self.num_spatial_dim)
+        lpf_conv_lpf_flip = circular_conv(
+            lpf, torch.flip(lpf, dims=[-1]), self.num_spatial_dim
+        )
 
         # Extract positive even indices
         even_idx = slice(2 * (self.order - 1), 4 * (self.order - 1) + 1, 2)

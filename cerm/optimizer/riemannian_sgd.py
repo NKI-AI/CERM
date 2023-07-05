@@ -80,7 +80,9 @@ class RSGD(torch.optim.Optimizer):
                 )
 
                 # Refine using Newton
-                new_params, groups_not_converged, _ = manifold.refine_point(params.clone())
+                new_params, groups_not_converged, _ = manifold.refine_point(
+                    params.clone()
+                )
                 if not groups_not_converged:
                     params.copy_(new_params)
 

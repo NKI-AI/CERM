@@ -133,7 +133,9 @@ class ConstrainedManifold:
         )
 
         # Compute derivative inverse chart
-        jac_inv_chart = torch.zeros(num_groups, num_params, dim_manifold).to(jac_zero_map.device)
+        jac_inv_chart = torch.zeros(num_groups, num_params, dim_manifold).to(
+            jac_zero_map.device
+        )
 
         jac_inv_chart[
             vars_and_coords.vars_jac_inv_chart["params_dim"],

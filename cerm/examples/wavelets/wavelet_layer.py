@@ -54,7 +54,9 @@ class WaveletBaseLayer(torch.nn.Module):
         # Initialize constraint
         num_filters = self.dim * num_filters_per_channel * num_channels
         self.dim_filter = 2 * self.order - 1
-        self.lpf = ConstrainedParameter(constraint=QMFConstraint(num_filters, self.order))
+        self.lpf = ConstrainedParameter(
+            constraint=QMFConstraint(num_filters, self.order)
+        )
 
 
 class WaveletLayer1d(WaveletBaseLayer):
