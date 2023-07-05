@@ -75,6 +75,6 @@ def split_params(
         if isinstance(params, ConstrainedParameter):
             constrained_params.append(params)
         elif isinstance(params, torch.nn.Parameter):
-            free_params.append(free_params)
+            free_params.append(params)
 
     return free_params, constrained_params
