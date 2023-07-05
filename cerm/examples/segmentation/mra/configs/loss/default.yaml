@@ -1,0 +1,3 @@
+approx_high_l2: 1.0
+active_contour: 0.0
+cross_entropy_classifier: 10.0

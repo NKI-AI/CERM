@@ -1,0 +1,5 @@
+clip_range: [-250, 250]
+intensity_range: [0, 1]
+resize: true
+order_fourier: 16
+threshold_detail: 1e-07

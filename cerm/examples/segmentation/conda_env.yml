@@ -1,0 +1,44 @@
+name: mra
+channels:
+    - pytorch
+    - conda-forge
+    - defaults
+dependencies:
+    - python=3.9
+    - mkl
+    - mkl-include
+    - h5py
+    - numpy
+    - numba
+    - pyyaml
+    - pydicom
+    - pynrrd
+    - pywavelets
+    - simpleitk
+    - scipy
+    - pandas
+    - scikit-learn
+    - scikit-image
+    - seaborn
+    - shapely
+    - pytorch=1.11.0
+    - cudatoolkit=11.3
+    - torchaudio
+    - torchvision
+    - tensorboard
+    - omegaconf
+    - optuna
+    - cython
+    - mlflow
+    - pytest
+    - hydra-core
+    - tqdm
+    - pip
+    - pip:
+        - opencv-python
+        - tensorflow
+        - einops
+        - black
+        - pytorch-lightning==1.5.10
+        - hydra-submitit-launcher
+        - hydra-optuna-sweeper

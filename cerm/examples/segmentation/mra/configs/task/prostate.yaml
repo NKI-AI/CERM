@@ -1,0 +1,9 @@
+# @package _global_
+
+defaults:
+  - override /dataset: prostate.yaml
+  - override /prep: prostate.yaml
+  - override /augment: prostate.yaml
+  - override /network: prostate.yaml
+  - override /loss: prostate.yaml
+  - override /trainer: prostate.yaml

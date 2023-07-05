@@ -1,0 +1,6 @@
+train_dir: ???
+val_dir: ???
+test_dir: ???
+dim_img: [256, 256]
+img_key: "CT"
+mask_key: "spleen"

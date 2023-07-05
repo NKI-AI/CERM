@@ -1,0 +1,11 @@
+device: gpu
+train: True
+predict: False
+export_data_stats: False
+export_model_performance: False
+export_wavelets: False
+epoch: ???
+model_dir: ???
+scratch_dir: ???
+resume: false
+num_workers: 4

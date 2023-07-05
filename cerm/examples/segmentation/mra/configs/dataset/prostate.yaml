@@ -1,0 +1,6 @@
+train_dir: ???
+val_dir: ???
+test_dir: ???
+dim_img: [192,192]
+img_key: "T2"
+mask_key: "TZ"

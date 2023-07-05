@@ -1,0 +1,25 @@
+# @package _global_
+
+# specify here default training configuration
+defaults:
+  - _self_  # Means that any variables defined here will be overridden by possible subconfigs below
+  - setup: default.yaml
+  - prep: ???
+  - dataset: ???
+  - augment: default.yaml
+  - network: default.yaml
+  - loss: default.yaml
+  - hyperparam_search: null
+  - trainer: default.yaml
+  - task: ???
+
+
+  # experiment configs allow for version control of specific configurations
+  # e.g. specific hyperparameter searches or something
+  - experiment: null
+
+hydra:
+   job:
+      chdir: True
+
+seed: 234

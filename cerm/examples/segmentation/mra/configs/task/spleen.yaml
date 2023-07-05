@@ -1,0 +1,9 @@
+# @package _global_
+
+defaults:
+  - override /dataset: spleen.yaml
+  - override /prep: spleen.yaml
+  - override /augment: spleen.yaml
+  - override /network: spleen.yaml
+  - override /loss: spleen.yaml
+  - override /trainer: spleen.yaml
