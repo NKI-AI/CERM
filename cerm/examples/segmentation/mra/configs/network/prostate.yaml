@@ -1,26 +1,22 @@
-activation: ReLU
+activation: GELU
 
 encoder:
   len_encoder: 5
-  len_res_block: 4
-  init_num_kernels: 64
+  len_res_block: 2
+  init_num_kernels: 32
 
 decoder:
   order_wavelet: 3
   init_res_level: 7
   num_levels_down: 4
   num_levels_up: 4
-  num_channels_compress: 16
+  num_channels_compress: 8
 
 mlp_contour:
-  depth: 3
-  dim_latent: 124
-
-mlp_classifier:
   depth: 2
-  dim_latent: 64
+  dim_latent: 116
 
 regularization:
   dropout_prob: 0.0
   group_norm: true
-  num_groups: 16
+  num_groups: 8

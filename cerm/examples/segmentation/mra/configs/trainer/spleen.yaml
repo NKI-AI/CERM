@@ -18,7 +18,7 @@ encoder:
       method: "Plateau"
 decoder:
   init_lr: 1e-04
-  lr: 0.0008109
+  lr: 1e-02
   method: "RSGD"
   momentum: 0.0
   weight_decay: 0.0

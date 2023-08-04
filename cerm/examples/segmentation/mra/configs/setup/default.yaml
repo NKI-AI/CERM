@@ -4,6 +4,7 @@ predict: False
 export_data_stats: False
 export_model_performance: False
 export_wavelets: False
+measure_inference_speed: True
 epoch: ???
 model_dir: ???
 scratch_dir: ???
