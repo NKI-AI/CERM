@@ -19,7 +19,7 @@ from mra.processing.prep_utils import init_preprocessing
 from mra.network import model_utils
 from mra.augment.random_transforms import AugmentFactory
 from mra.optimizer.train_utils import init_training
-from mra.utils import inference, stats, bbox
+from mra.utils import inference, stats, bbox, timing
 from mra.pnp_hyperparam import process_score
 
 
@@ -139,6 +139,15 @@ def main(cfg: DictConfig) -> None:
         final_epoch = cfg.setup.epoch
         inference.export_wavelets(
             cfg, model, init_epoch, final_epoch, out_dir / "wavelets"
+        )
+
+    if cfg.setup.measure_inference_speed:
+        logger.info("Measure inference speed")
+        timing.measure_inference_speed(
+            model,
+            out_dir / "inference_speed",
+            batch_size=cfg.trainer.dataloader.batch_size,
+            device=cfg.setup.device,
         )
 
 
