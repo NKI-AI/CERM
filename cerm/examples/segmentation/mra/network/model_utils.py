@@ -37,8 +37,6 @@ def init_model(cfg: DictConfig) -> ContourModel:
         num_channels_compress=cfg.network.decoder.num_channels_compress,
         mlp_contour_depth=cfg.network.mlp_contour.depth,
         mlp_contour_dim_latent=cfg.network.mlp_contour.dim_latent,
-        mlp_classifier_depth=cfg.network.mlp_classifier.depth,
-        mlp_classifier_dim_latent=cfg.network.mlp_classifier.dim_latent,
         group_norm=cfg.network.regularization.group_norm,
         num_groups=cfg.network.regularization.num_groups,
         activation=cfg.network.activation,

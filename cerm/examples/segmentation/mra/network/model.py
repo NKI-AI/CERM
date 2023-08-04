@@ -30,8 +30,6 @@ class ContourModel(torch.nn.Module):
         num_wavelet_filters: int = 1,
         mlp_contour_depth: int = 2,
         mlp_contour_dim_latent: int = 64,
-        mlp_classifier_depth: int = 2,
-        mlp_classifier_dim_latent: int = 64,
         group_norm: bool = False,
         num_groups: int = 4,
         activation: str = "ReLU",
@@ -99,8 +97,6 @@ class ContourModel(torch.nn.Module):
         self.len_res_block = len_res_block
         self.mlp_contour_depth = mlp_contour_depth
         self.mlp_contour_dim_latent = mlp_contour_dim_latent
-        self.mlp_classifier_depth = mlp_classifier_depth
-        self.mlp_classifier_dim_latent = mlp_classifier_dim_latent
         self.init_num_kernels = init_num_kernels
         self.num_channels_compress = num_channels_compress
         self.init_pred_level = len_encoder - num_levels_up + 1
@@ -124,7 +120,6 @@ class ContourModel(torch.nn.Module):
         )
 
         # Attach branches
-        self._construct_classifier_branch()
         self._construct_detail_branch()
         self._construct_approx_branch()
 
@@ -136,17 +131,6 @@ class ContourModel(torch.nn.Module):
             num_filters_per_channel,
             periodic_signal=True,
             num_channels=2,
-        )
-
-    def _construct_classifier_branch(self) -> None:
-        """Construct classifier."""
-        dim_out = 1
-        self.classifier = fc_blocks.MLP(
-            self.encoder.dim_bottom,
-            self.mlp_classifier_dim_latent,
-            dim_out,
-            num_hidden_layers=self.mlp_classifier_depth,
-            num_channels_compress=self.num_channels_compress,
         )
 
     def _construct_detail_branch(self) -> None:
@@ -225,7 +209,6 @@ class ContourModel(torch.nn.Module):
 
         # Output encoder
         out_encoder, skips = self.encoder(x)
-        preprob = self.classifier(out_encoder)
 
         # Downsampling path encoder: compute detail coefficients from skip layers
         detail = []
@@ -261,7 +244,6 @@ class ContourModel(torch.nn.Module):
             d[torch.abs(d) < self.threshold_detail] *= 0.0
 
         return {
-            "classifier": preprob,
             "approx": approx,
             "detail": detail,
         }

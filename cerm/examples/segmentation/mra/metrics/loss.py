@@ -44,14 +44,6 @@ class ContourLoss:
         dim_img = sample["img"].shape[-2:]
         loss = {}
 
-        # Classification loss
-        is_non_empty = sample["is_non_empty"]
-        log_prob = F.logsigmoid(pred["classifier"])
-        ce = is_non_empty * log_prob + (1 - is_non_empty) * (
-            log_prob - pred["classifier"]
-        )
-        loss["cross_entropy_classifier"] = -torch.mean(ce)
-
         # Contour and bounding box loss
         non_void_idx = torch.where(sample["is_non_empty"] == 1)[0]
 
@@ -126,7 +118,6 @@ def mean_loss(
 
     for loss_key in performance_keys:
         mean_loss[loss_key] = torch.tensor(0.0)
-    mean_loss["cross_entropy_classifier"] = torch.tensor(0.0)
 
     with torch.no_grad():
         # Perform inference over entire dataset first to keep GPU busy
@@ -156,10 +147,6 @@ def mean_loss(
             for key in ["approx_high_l2", "active_contour"]:
                 mean_loss[key] += num_non_empty_in_batch * loss_eval[key]
 
-            mean_loss["cross_entropy_classifier"] += (
-                num_samples_in_batch * loss_eval["cross_entropy_classifier"]
-            )
-
             # Groundtruth and predicted curves
             contour_gt = (
                 2 ** (init_res_level / 2)
@@ -181,7 +168,6 @@ def mean_loss(
             )
 
         # Average each component in loss
-        mean_loss["cross_entropy_classifier"] /= num_samples
         for loss_key in performance_keys:
             mean_loss[loss_key] /= num_non_empty_samples
 

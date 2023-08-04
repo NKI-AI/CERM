@@ -114,10 +114,6 @@ def predict(
             # Predict and move to cpu
             pred_batch = model(sample["img"].to(device))
 
-            # Classification and segmentation
-            for key in ["classifier"]:
-                pred_batch[key] = pred_batch[key].cpu()
-
             # Approximation coefficients
             for level in range(len(pred_batch["approx"])):
                 pred_batch["approx"][level] = pred_batch["approx"][level].cpu()

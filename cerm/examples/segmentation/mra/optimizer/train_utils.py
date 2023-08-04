@@ -30,13 +30,11 @@ def init_loss(
     """
     if pretrain:
         weights = {
-            "cross_entropy_classifier": cfg.loss.cross_entropy_classifier,
             "approx_high_l2": cfg.loss.approx_high_l2,
             "active_contour": 0.0,
         }
     else:
         weights = {
-            "cross_entropy_classifier": cfg.loss.cross_entropy_classifier,
             "approx_high_l2": cfg.loss.approx_high_l2,
             "active_contour": cfg.loss.active_contour,
         }
