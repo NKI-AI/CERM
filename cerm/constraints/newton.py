@@ -21,7 +21,7 @@ class Newton:
     def __init__(
         self,
         max_iter: int = 64,
-        tol_zero: float = 1e-06,
+        tol_zero: float = 1e-05,
         tol_svd: float = 1e-08,
         group_criterium: str = "max",
         param_criterium: str = "l1",
