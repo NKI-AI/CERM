@@ -8,7 +8,7 @@
 [![isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/) <br>
 
 CERM is a deep learning framework for training neural networks with constraints; the implementation details can be found in [REF]. Here we briefly explain how to use the general framework and run the examples accompanied with our NeurIPS 2023 submission "Constrained Empirical Risk Minimization".
- 
+
  </div>
 
  <br>
@@ -24,7 +24,7 @@ The CERM framework preserves the usual flow of building models in PyTorch as muc
 
 ### Using constrained parameters
 
-We provide an abstract class `Constraints` whose implementation should be completed by the user. The user is only required to implement their specific constraint of interest. 
+We provide an abstract class `Constraints` whose implementation should be completed by the user. The user is only required to implement their specific constraint of interest.
 A specific constraint can be applied to different groups of parameters, assuming each group has the same dimensionality. We require the user to provide the following data to the constructor of our `Constraint` class:
 >- ***num_params: int***
 >    - dimension input of zero map
@@ -33,14 +33,14 @@ A specific constraint can be applied to different groups of parameters, assuming
 >- ***num_groups: int***
 >    - the same set of equations can be applied to different groups (layers)
 
-Next, we build our model as usual extending the ``torch.nn.Module`` class, 
+Next, we build our model as usual extending the ``torch.nn.Module`` class,
 with the only difference that we use `ConstrainedParameter` instead of `torch.nn.Parameter` in the places where we wish to use constraints.
 The constructor of `ConstrainedParameter` requires the following data:
 
 >- `constraint`: an instance of the `Constraint` class.
 >- `init_params` (optional): initial guess parameters.
 
-The constructor of the `ConstrainedParameter` will refine the initial guess and constrain it to the constrained manifold. A constrained parameter is 
+The constructor of the `ConstrainedParameter` will refine the initial guess and constrain it to the constrained manifold. A constrained parameter is
 explicitly constructed using
 ```python
     from cerm.network.constrained_params import ConstrainedParameter
@@ -48,9 +48,9 @@ explicitly constructed using
 ```
 
 ### Optimizer
-Models are trained by using a custom optimizer for the constrained parameters, which 
-can be found in `/CERM/cerm/optimizer`, and works like any standard optimizer in PyTorch. 
-When writing training routines, one should use the `split_params` function first to split 
+Models are trained by using a custom optimizer for the constrained parameters, which
+can be found in `/CERM/cerm/optimizer`, and works like any standard optimizer in PyTorch.
+When writing training routines, one should use the `split_params` function first to split
 the learnable parameteres in the model into constrained and unconstrained ones; see
 the example below.
    ```python
@@ -70,7 +70,7 @@ the example below.
 
 ## Examples
 
-### MLP with spherical constraints 
+### MLP with spherical constraints
 In `/CERM/cerm/examples/sphere` we define a fully connected layer, where the rows of the
 weight matrix are constrained to the unit sphere. This example serves only as a minimal toy example
 illustrating how to use our framework.
@@ -85,8 +85,8 @@ illustrating how to use our framework.
     dim_latent = 96
     num_hidden_layers = 4
     mlp = spherical_constraints.MLP(dim_in, dim_latent, dim_out, num_hidden_layers)
-    
-    # Evaluate 
+
+    # Evaluate
     bsize = 6
     x = torch.rand(bsize, dim_in)
     y = mlp(x)
@@ -94,8 +94,8 @@ illustrating how to use our framework.
 
 ### MLP constrained to Stiefel manifold
 In `/CERM/cerm/examples/stiefel` we define a fully connected layer, where the weight matrix is
-constrained to lie on the so-called Stiefel manifold. That is, the columns of the weight matrix form 
-an orthonormal set. 
+constrained to lie on the so-called Stiefel manifold. That is, the columns of the weight matrix form
+an orthonormal set.
    ```python
     import torch
 
@@ -105,62 +105,66 @@ an orthonormal set.
     dim_in = 10
     dim_out = 15
     stiefel_layer = stiefel.StiefelLayer(dim_in, dim_out, bias=True)
-    
+
     # Apply model
     bsize = 16
     x = torch.rand(bsize, dim_in)
     y = stiefel_layer(x)
 ```
 This setup also contains an example of a domain-specific method to initialize parameters
-randomly (points on the Stiefel manifold). 
+randomly (points on the Stiefel manifold).
 
 ### Shift equivariant fully connected layer
-In `/CERM/cerm/examples/equivariance` we define a fully connected layer which is equivariant to circular shifts.
-The purpose of this example is only to illustrate the flexibility of our framework; we know, of course, which
-architecture is needed for achieving shift equivariance (CNNs) 
+In `/CERM/cerm/examples/equivariance` we define a fully connected layer which is equivariant to
+circular shifts. The only purpose of this example is to illustrate the flexibility of our framework. We know, of course, precisely what architecture is needed for achieving shift equivariance (CNNs).
    ```python
-    import torch
-    import logging
+   import torch
+   import logging
 
-    from torch import Tensor
+   from torch import Tensor
 
-    from cerm.examples.equivariance.shift import ShiftEquivariantLayer
+   from cerm.examples.equivariance.shift import ShiftEquivariantLayer
 
-    # Module logger
-    logger = logging.getLogger(__name__)
-    logging.basicConfig(level=logging.INFO)
+   # Module logger
+   logger = logging.getLogger(__name__)
+   logging.basicConfig(level=logging.INFO)
 
 
-    def shift(x: Tensor) -> Tensor:
-        """Circual shift sequence.
-        
-        Parameters
-        ----------
-        x: Tensor
-            batch of 1d input (shape [batch_size dim])
+   def left_shift(x: Tensor, num_shifts: int) -> Tensor:
+       """Shift sequence to the left (circular).
 
-        Returns
-        -------
-        y: Tensor
-            input shifted one place to the right
-        """
-        y = torch.zeros(*x.shape)
-        y[:, 0] = x[:, -1]
-        y[:, 1:] = x[:, 0:-1]
-        return y   
-        
-    # Initialize shift equivariant layer
-    dim = 35
-    bsize = 5
-    layer = ShiftEquivariantLayer(dim)
+       Parameters
+       ----------
+       x: Tensor
+           batch of 1d sequences (shape [batch_size len_seq])
+       num_shifts:
+           number of shifts to the left
 
-    # Test equivariance
-    x = 100 * torch.rand(bsize, dim)
-    y1 = shift(layer(x))
-    y2 = layer(shift(x))
+       Returns
+       -------
+       y: Tensor
+           input sequence shifted to the left (shape [batch_size len_seq])
+       """
+       len_seq = x.shape[1]
+       assert num_shifts < len_seq, "Number of shifts exceeds sequence length"
+       idx = (torch.arange(len_seq) + num_shifts) % len_seq
+       return x[:, idx]
 
-    logger.info(f"Discrepancy equivariance: {torch.max(y1 - y2)}")         
+
+   # Initialize shift equivariant layer
+   dim = 35
+   bsize = 5
+   layer = ShiftEquivariantLayer(dim)
+
+   # Test equivariance
+   num_shifts = 7
+   x = 100 * torch.rand(bsize, dim)
+   y1 = left_shift(layer(x), num_shifts)
+   y2 = layer(left_shift(x, num_shifts))
+
+   logger.info(f"Discrepancy equivariance: {torch.max(torch.abs(y1 - y2))}")       
 ```
+
 ### Learnable wavelet layers
 A more elaborate example implementing learnable wavelet layers can be found in `/CERM/cerm/examples/wavelets`
 In this section we summarize the details of how to use our wavelet-layers using the CERM-framework. The constructor of the 1d wavelet layer requires the following data:
@@ -183,7 +187,7 @@ A minimal example using a wavelet layer is given below
     from cerm.examples.wavelets.wavelet_layer import WaveletLayer1d
 
     # Construct learnable wavelet layer
-    order = 4 
+    order = 4
     num_levels_down = 3
     num_channels = 2
     wavelet_layer = WaveletLayer1d(order, num_levels_down, num_channels=num_channels)

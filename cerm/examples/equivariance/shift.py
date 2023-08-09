@@ -1,4 +1,4 @@
-"""Example constraint circular shift-equivariance."""
+"""Example circular shift-equivariance."""
 
 import torch
 import numpy as np
@@ -20,8 +20,10 @@ def init_dft_matrices(dim: int) -> Tensor:
 
     Returns
     -------
-    complex-valued PyTorch tensor of shape [dim dim]
+    dft: complex-valued PyTorch tensor of shape [dim dim]
         DFT matrix
+    inv_dft: complex-valued PyTorch tensor of shape [dim dim]
+        inverse DFT matrix
     """
     k = torch.arange(dim) + 0j
     dft = torch.exp(-1j * 2 * np.pi * k.view(dim, 1) @ k.view(1, dim) / dim)
@@ -37,7 +39,7 @@ def params_to_matrix(params: Tensor, dim: int) -> Tuple[Tensor, Tensor]:
     params: float-valued PyTorch tensor of shape [num_groups 2 * dim^2]
         flattened view of real and imaginary part weight matrix
     dim: int
-        dimension square weight matrix
+        dimension of (square) weight matrix
 
     Returns
     -------
@@ -56,7 +58,7 @@ class ShiftConstraint(Constraint):
     """Constraint shift equivariant layer."""
 
     def __init__(self, num_groups: int, dim: int) -> None:
-        """Initialize dimension shift equivariant constraint.
+        """Initialize shift equivariant constraint.
 
         Parameters
         ----------
@@ -72,7 +74,7 @@ class ShiftConstraint(Constraint):
         self.dft = dft.unsqueeze(0).repeat(num_groups, 1, 1)
         self.inv_dft = inv_dft.unsqueeze(0).repeat(num_groups, 1, 1)
 
-        # Nondiagonal indices (linear index row major order)
+        # Non-diagonal indices (linear indexing in row major order)
         diag_idx = [j * (self.dim + 1) for j in range(self.dim)]
         self.non_diag_idx = [j for j in range(self.dim**2) if j not in diag_idx]
 
@@ -80,17 +82,17 @@ class ShiftConstraint(Constraint):
         super().__init__(2 * dim**2, num_eqs, num_groups)
 
     def __call__(self, params: Tensor) -> Tensor:
-        """Evaluate zero (constraint) map.
+        """Evaluate constraint map.
 
         Parameters
         ----------
-        params: Tensor
-            real and imaginary part weight matrices (flattened)
+        params: float-valued PyTorch tensor of shape [num_groups 2 * dim^2]
+            flattened view of real and imaginary part weight matrix
 
         Returns
         -------
         float-valued PyTorch tensor of shape [num_groups num_eqs]
-            evaluated constraint map for shift equivariance
+            constraint map evaluated at params
         """
         # Compute y = V^{-1} W V
         real_mat, img_mat = params_to_matrix(params, self.dim)
@@ -109,7 +111,7 @@ class ShiftEquivariantLayer(torch.nn.Module):
         dim: int,
         bias: bool = False,
     ) -> None:
-        """Initialize parameters Stiefel manifold and bias.
+        """Initialize parameters linear layer.
 
         Parameters
         ----------
@@ -133,12 +135,12 @@ class ShiftEquivariantLayer(torch.nn.Module):
             self.bias = torch.nn.Parameter(torch.zeros(self.dim, 2))
 
     def _init_params(self) -> Tensor:
-        """Initialize random shift equivariant parameters W = V diag V^{-1}
+        """Initialize random shift-equivariant weight matrix: W = V diag(x) V^{-1}
 
         Returns
         -------
-        float-valued PyTorch tensor of shape [1 dim dim]
-            initialize initial shift equivariant parameters
+        float-valued PyTorch tensor of shape [1 2*dim^2]
+            randomly initialized shift-equivariant weight matrix (flattened)
         """
         dft, inv_dft = init_dft_matrices(self.dim)
         diag_elements = torch.normal(torch.zeros(self.dim), 1 / self.dim**1.5)
@@ -146,17 +148,17 @@ class ShiftEquivariantLayer(torch.nn.Module):
         return torch.stack((torch.real(mat), torch.imag(mat))).flatten().unsqueeze(0)
 
     def forward(self, x: Tensor) -> Tensor:
-        """Apply Stiefel layer.
+        """Evaluate shift-equivariant layer.
 
         Parameters
         ----------
-        x: float-valued PyTorch Tensor of shape [batch_size dim_in]
+        x: float-valued PyTorch Tensor of shape [batch_size dim]
             input to equivariant layer
 
         Returns
         -------
-        float-valued PyTorch tensor of shape [batch_size dim_out]
-            output stiefel layer
+        float-valued PyTorch tensor of shape [batch_size dim]
+            output equivariant layer
         """
         real_mat, imag_mat = params_to_matrix(self.params, self.dim)
         y = torch.nn.functional.linear(x, real_mat.squeeze(0), bias=self.bias[:, 0])
