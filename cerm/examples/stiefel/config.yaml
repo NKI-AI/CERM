@@ -1,0 +1,26 @@
+# @package _global_
+
+data:
+  path: /path/to/data
+  random_train_val_split: False
+  batch_size: 128
+  num_workers: 0
+
+network:
+  _target_: cerm.examples.stiefel.network.baseline.MLP
+  input_dim: 784
+  hidden_dim: 128
+  output_dim: 10
+
+optimizer:
+  _target_: torch.optim.SGD
+  lr: 0.1
+  momentum: 0.9
+  weight_decay: 0.0005
+
+loss:
+  _target_: torch.nn.CrossEntropyLoss
+
+training:
+  epochs: 10
+  log_interval: 100
