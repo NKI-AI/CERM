@@ -1,6 +1,8 @@
 """Example constraint Stiefel manifold."""
 
 import torch
+import numpy as np
+
 from torch import Tensor
 
 from cerm.constraints.constraints import Constraint
@@ -79,25 +81,17 @@ class StiefelConstraint(Constraint):
         self.num_rows = num_rows
         self.num_cols = num_cols
 
+        # Indices upper triangular part of square matrix
+        idx_left = []
+        idx_right = []
+        for row_idx in range(self.num_cols):
+            idx_left += [row_idx for _ in range(num_cols - row_idx)]
+            idx_right += [k for k in range(row_idx, self.num_cols)]
+        self.mat_upper_idx = [idx_left, idx_right]
+
+        self.eye = torch.eye(self.num_cols)
+
         super().__init__(num_rows * num_cols, num_eqs, num_groups)
-
-    @staticmethod
-    def _delta(i: int, j: int) -> int:
-        """Kronecker delta.
-
-        Parameters
-        ----------
-        int: i
-            index
-        int j:
-            index
-
-        Returns
-        -------
-        int
-            kronecker delta of i and j
-        """
-        return 1 if i == j else 0
 
     def __call__(self, params: Tensor) -> Tensor:
         """Zero map associated stiefel manifold.
@@ -113,19 +107,15 @@ class StiefelConstraint(Constraint):
             evaluated stiefel zero map
         """
         mat = params.view(self.num_groups, self.num_rows, self.num_cols)
-        eqs = []
+        orth_constraint = torch.transpose(mat, 1, 2) @ mat - self.eye.to(params.device)
+        eqs = orth_constraint[:, self.mat_upper_idx[0], self.mat_upper_idx[1]]
 
-        for i in range(self.num_cols):
-            col = mat[:, :, i]
-            for j in range(i, self.num_cols):
-                eqs.append(torch.sum(mat[:, :, j] * col, dim=-1) - self._delta(i, j))
-
-        eqs = torch.cat(eqs, dim=-1)
-
-        if self.num_groups == 1:
-            return eqs.unsqueeze(0)
-        else:
-            return eqs
+        # Memory efficient implementation
+        # for i in range(self.num_cols):
+        #     col = mat[:, :, i]
+        #     for j in range(i, self.num_cols):
+        #        eqs.append(torch.sum(mat[:, :, j] * col, dim=-1) - self._delta(i, j))
+        return eqs
 
 
 class StiefelLayer(torch.nn.Module):
@@ -190,4 +180,120 @@ class StiefelLayer(torch.nn.Module):
         """
         return torch.nn.functional.linear(
             x, self.params.view(self.dim_out, self.dim_in), bias=self.bias
+        )
+
+
+class StiefelConv2d(torch.nn.Module):
+    """Convolutional layer with filter constrained to Stiefel manifold."""
+
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: int,
+        stride: int = 1,
+        padding: int = 0,
+        bias: bool = True,
+        padding_mode: str = "zeros",
+        filter_batch_size: int = 128,
+        device: bool = None,
+    ) -> None:
+        """Initialize parameters Stiefel manifold and bias.
+
+        Parameters
+        ----------
+        in_channels: int
+            number input channels
+        out_channels: int
+            number output channels (feature maps)
+        kernel_size: int
+            size of kernel
+        stride: int
+            stride in convolution
+        padding: int
+            amount of padding before taking convolution
+        padding_mode: str
+            padding method
+        param_batch_size: int
+            split parameters (filters) up in batches for performance
+        bias: bool
+            include bias if true
+        """
+        super().__init__()
+
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.bias = bias
+        self.padding_mode = padding_mode
+        self.device = device
+
+        # Initialize filters constrained to Stiefel manifold
+        self.num_filters = self.out_channels * self.in_channels
+        self.filter_batch_size = filter_batch_size
+        self._init_stiefel_filters()
+
+        # Bias
+        if bias:
+            self.bias = torch.nn.Parameter(
+                torch.empty(
+                    out_channels,
+                )
+            )
+        else:
+            self.bias = None
+
+        self._init_bias()
+
+    def _init_bias(self) -> None:
+        if self.bias is not None:
+            fan_in = self.in_channels * self.kernel_size**2
+            if fan_in != 0:
+                bound = 1 / np.sqrt(fan_in)
+                torch.nn.init.uniform_(self.bias, -bound, bound)
+
+    def _init_stiefel_filters(self) -> Tensor:
+        """Initialize filters on stiefel manifold.
+
+        Returns
+        -------
+        float-valued PyTorch tensor of shape [out_channels kernel_size * kernel_size]
+            initial filters on stiefel manifold
+        """
+        num_batches = self.num_filters // self.filter_batch_size
+        remainder = self.num_filters % self.filter_batch_size
+        batch_sizes = [self.filter_batch_size for _ in range(num_batches)]
+        if remainder > 0:
+            batch_sizes += [remainder]
+
+        self.kernels = torch.nn.ParameterList([])
+        for bsize in batch_sizes:
+            orth_mat = torch.stack(
+                [sample_orthogonal_matrix(self.kernel_size) for _ in range(bsize)]
+            ).flatten(start_dim=1)
+
+            self.kernels.append(
+                ConstrainedParameter(
+                    init_params=orth_mat,
+                    constraint=StiefelConstraint(
+                        bsize, self.kernel_size, self.kernel_size
+                    ),
+                )
+            )
+
+    def forward(self, x: Tensor) -> Tensor:
+        params = torch.concat(
+            [
+                k.view(k.shape[0], self.kernel_size, self.kernel_size)
+                for k in self.kernels
+            ]
+        )
+        kernels = params.view(
+            self.out_channels, self.in_channels, self.kernel_size, self.kernel_size
+        )
+
+        return torch.nn.functional.conv2d(
+            x, kernels, bias=self.bias, stride=self.stride, padding=self.padding
         )
