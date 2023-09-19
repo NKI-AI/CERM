@@ -21,8 +21,8 @@ class Newton:
     def __init__(
         self,
         max_iter: int = 64,
-        tol_zero: float = 1e-05,
-        tol_svd: float = 1e-08,
+        tol_zero: float = 1e-04,
+        tol_svd: float = 1e-04,
         group_criterium: str = "max",
         param_criterium: str = "l1",
     ) -> None:
@@ -195,6 +195,7 @@ class Newton:
                 else:
                     logger.info(f"Newton did not converge: error = {curr_error}")
             else:
-                logger.info(f"Newton converged. Error = {curr_error}")
+                pass
+                # logger.info(f"Newton converged. Error = {curr_error}")
 
             return x, singular_group_idx, min_singular_val
