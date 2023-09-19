@@ -3,24 +3,29 @@
 data:
   path: /path/to/data
   random_train_val_split: False
-  batch_size: 128
+  batch_size: 256
   num_workers: 0
 
 network:
-  _target_: cerm.examples.stiefel.network.baseline.MLP
-  input_dim: 784
-  hidden_dim: 128
-  output_dim: 10
-
-optimizer:
-  _target_: torch.optim.SGD
-  lr: 0.1
-  momentum: 0.9
+  _target_: cerm.examples.stiefel.network.resnet.WideResNet
+  input_dim: [3, 32, 32]
+  num_kernels: [16, 32, 64] 
+  widen_factor: 1
+  num_res_blocks: 2
+  num_classes: 100
+  
+unconstrained_optimizer:
+  _target_: torch.optim.Adam
+  lr: 1e-02
   weight_decay: 0.0005
+
+constrained_optimizer:
+  _target_: cerm.optimizer.riemannian_sgd.RSGD
+  lr: 1e-04
 
 loss:
   _target_: torch.nn.CrossEntropyLoss
 
 training:
-  epochs: 10
-  log_interval: 100
+  epochs: 100
+  log_interval: 10
