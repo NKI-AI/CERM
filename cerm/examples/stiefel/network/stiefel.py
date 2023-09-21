@@ -195,7 +195,7 @@ class StiefelConv2d(torch.nn.Module):
         padding: int = 0,
         bias: bool = True,
         padding_mode: str = "zeros",
-        filter_batch_size: int = 128,
+        filter_batch_size: int = 1024,
         device: bool = None,
     ) -> None:
         """Initialize parameters Stiefel manifold and bias.
@@ -262,35 +262,24 @@ class StiefelConv2d(torch.nn.Module):
         float-valued PyTorch tensor of shape [out_channels kernel_size * kernel_size]
             initial filters on stiefel manifold
         """
-        num_batches = self.num_filters // self.filter_batch_size
-        remainder = self.num_filters % self.filter_batch_size
-        batch_sizes = [self.filter_batch_size for _ in range(num_batches)]
-        if remainder > 0:
-            batch_sizes += [remainder]
+        n1  = self.in_channels * self.kernel_size ** 2
+        n2 = self.out_channels
+        
+        if n1 > n2:
+            num_rows = n1
+            num_cols = n2
+        else:
+            num_rows = n2
+            num_cols = n1
 
-        self.kernels = torch.nn.ParameterList([])
-        for bsize in batch_sizes:
-            orth_mat = torch.stack(
-                [sample_orthogonal_matrix(self.kernel_size) for _ in range(bsize)]
-            ).flatten(start_dim=1)
-
-            self.kernels.append(
-                ConstrainedParameter(
-                    init_params=orth_mat,
-                    constraint=StiefelConstraint(
-                        bsize, self.kernel_size, self.kernel_size
-                    ),
-                )
-            )
+        kernels = sample_orthogonal_matrix(num_rows)[:, 0:num_cols]
+        self.params = ConstrainedParameter(
+            init_params=kernels.flatten().unsqueeze(0),
+            constraint=StiefelConstraint(1, num_rows, num_cols),
+        )       
 
     def forward(self, x: Tensor) -> Tensor:
-        params = torch.concat(
-            [
-                k.view(k.shape[0], self.kernel_size, self.kernel_size)
-                for k in self.kernels
-            ]
-        )
-        kernels = params.view(
+        kernels = self.params.view(
             self.out_channels, self.in_channels, self.kernel_size, self.kernel_size
         )
 

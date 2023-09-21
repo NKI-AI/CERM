@@ -9,7 +9,7 @@ import torch
 from omegaconf import DictConfig
 from typing import Optional
 from logging import getLogger
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import accuracy_score
 
 from cerm.examples.stiefel.data.mnist_data import create_mnist_datasets
 from cerm.examples.stiefel.data.cifar100_data import create_cifar_datasets
@@ -59,14 +59,22 @@ def main(cfg: DictConfig) -> Optional[float]:
         cfg.unconstrained_optimizer, unconstrained_params
     )
 
-    logger.info(f"Instantiating optimizer {cfg.constrained_optimizer._target_}")
-    constrained_optim = hydra.utils.instantiate(
-        cfg.constrained_optimizer, constrained_params
-    )
-
     # Instantiate loss
     logger.info(f"Instantiating loss {cfg.loss._target_}")
     loss = hydra.utils.instantiate(cfg.loss)
+
+    # Instantiate scheduler
+    logger.info(f"Instantiating loss {cfg.scheduler._target_}")
+    scheduler_unconstrained = hydra.utils.instantiate(
+        cfg.scheduler, unconstrained_optim
+    )
+
+    if cfg.network.stiefel: 
+        logger.info(f"Instantiating constrained optimizer {cfg.constrained_optimizer._target_}")
+        constrained_optim = hydra.utils.instantiate(
+            cfg.constrained_optimizer, constrained_params
+        )    
+        scheduler_constrained = hydra.utils.instantiate(cfg.scheduler, constrained_optim)
 
     for epoch in range(cfg.training.epochs):
         # Train
@@ -78,14 +86,18 @@ def main(cfg: DictConfig) -> Optional[float]:
 
         for batch_idx, (data, target) in enumerate(train_dataloader):
             unconstrained_optim.zero_grad()
-            constrained_optim.zero_grad()
+            if cfg.network.stiefel: 
+                constrained_optim.zero_grad()
+
             data, target = data.to(device), target.to(device)
             output = model(data)
             loss_value = loss(output, target)
             loss_value.backward()
+
             with torch.no_grad():
                 unconstrained_optim.step()
-                constrained_optim.step()
+                if cfg.network.stiefel: 
+                    constrained_optim.step()
 
             pred = output.argmax(dim=1, keepdim=True).squeeze().cpu().numpy()
             y_train_true.extend(target.cpu().numpy())
@@ -100,7 +112,7 @@ def main(cfg: DictConfig) -> Optional[float]:
                 )
 
         avg_train_loss = total_train_loss / num_train_batches
-        train_balanced_accuracy = balanced_accuracy_score(y_train_true, y_train_pred)
+        train_balanced_accuracy = accuracy_score(y_train_true, y_train_pred)
 
         # Validation
         model.eval()
@@ -122,7 +134,11 @@ def main(cfg: DictConfig) -> Optional[float]:
                 y_val_pred.extend(pred)
 
         avg_val_loss = total_val_loss / num_val_batches
-        val_balanced_accuracy = balanced_accuracy_score(y_val_true, y_val_pred)
+        val_balanced_accuracy = accuracy_score(y_val_true, y_val_pred)
+
+        scheduler_unconstrained.step(avg_val_loss)
+        if cfg.network.stiefel: 
+            scheduler_constrained.step(avg_val_loss)
 
         logger.info(
             f"Epoch: {epoch} | Training balanced accuracy: {100. * train_balanced_accuracy:.2f}% | Validation balanced accuracy: {100. * val_balanced_accuracy:.2f}%"

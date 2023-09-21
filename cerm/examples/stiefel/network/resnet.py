@@ -45,9 +45,10 @@ class ResBlock(torch.nn.Module):
         num_layers: int = 2,
         kernel_size: int = 3,
         stride: int = 1,
-        activation: str = "ReLU",
+        activation: str = "GELU",
         batch_norm: bool = True,
         dilation: int = 1,
+        stiefel: bool = False,
     ) -> None:
         """
         Initialize dimensions of residual convolution block.
@@ -68,6 +69,8 @@ class ResBlock(torch.nn.Module):
             activation function used after each layer
         dilation: int
             dilation convolutional kernel
+        stiefel: bool
+            use stiefel constraint is true
         """
         super(ResBlock, self).__init__()
 
@@ -75,6 +78,7 @@ class ResBlock(torch.nn.Module):
         self.num_in_channels = num_in_channels
         self.num_out_channels = num_out_channels
         self.num_layers = num_layers
+        self.stiefel = stiefel
 
         # Kernel
         self.kernel_size = kernel_size
@@ -90,6 +94,8 @@ class ResBlock(torch.nn.Module):
         else:
             self.bias = True
 
+        self.conv2d = StiefelConv2d if self.stiefel else torch.nn.Conv2d
+
         # Convolution layers
         layers = torch.nn.ModuleList([])
         in_channels = self.num_in_channels
@@ -100,7 +106,7 @@ class ResBlock(torch.nn.Module):
             layers.append(self.activation)
 
             layers.append(
-                StiefelConv2d(
+                self.conv2d(
                     in_channels,
                     self.num_out_channels,
                     kernel_size,
@@ -143,10 +149,11 @@ class WideResNet(torch.nn.Module):
         num_res_blocks: int,
         num_classes: int,
         batch_norm: bool = True,
-        activation: str = "ReLU",
+        activation: str = "GELU",
         kernel_size: int = 3,
         len_res_layer: int = 2,
-        num_kernels: Tuple[int, int, int] = [16, 32, 64],
+        num_kernels: Tuple[int, int, int] = (16, 32, 64),
+        stiefel: bool = False,
     ) -> None:
         """
         Initialize WideResnet.
@@ -165,6 +172,10 @@ class WideResNet(torch.nn.Module):
             filter size
         len_res_layer: int, optional
             number of conv layers in a residual block
+        num_kernels: List[int, int ,int]
+            number of kernels per layer
+        stiefel: bool
+            use stiefel constraint is true
         """
         super(WideResNet, self).__init__()
 
@@ -179,6 +190,7 @@ class WideResNet(torch.nn.Module):
         # Regularization
         self.activation = activation
         self.batch_norm = batch_norm
+        self.stiefel = stiefel
 
         # Construct network
         self.dim_out = int(
@@ -192,14 +204,16 @@ class WideResNet(torch.nn.Module):
         blocks.append(
             ResBlock(
                 num_in_channels,
-                num_in_channels,
+                self.num_kernels[0],
                 kernel_size=self.kernel_size,
                 activation=self.activation,
                 batch_norm=self.batch_norm,
+                stiefel=self.stiefel,
             )
         )
 
         # Resblock with repetitions and down sampling
+        num_in_channels = self.num_kernels[0]
         for block_idx, num_features in enumerate(self.num_kernels):
             for rep_idx in range(self.num_res_blocks):
                 blocks.append(
@@ -209,16 +223,18 @@ class WideResNet(torch.nn.Module):
                         kernel_size=self.kernel_size,
                         activation=self.activation,
                         batch_norm=self.batch_norm,
+                        stiefel=self.stiefel,
                     )
                 )
                 if rep_idx == 0:
                     num_in_channels = num_features
-            blocks.append(torch.nn.AvgPool2d(2, stride=2))
+            if block_idx < len(self.num_kernels) - 1:
+                blocks.append(torch.nn.AvgPool2d(2))
             num_in_channels = num_features
 
-        # blocks.append(torch.nn.AvgPool2d(2, stride=2))
+        blocks.append(torch.nn.AvgPool2d(8))
         self.convnet = torch.nn.Sequential(*blocks)
-        self.classifier = torch.nn.Linear(self.dim_out, self.num_classes)
+        self.classifier = torch.nn.Linear(self.num_kernels[-1], self.num_classes)
 
     def forward(self, x: Tensor) -> Tensor:
         return self.classifier(self.convnet(x).flatten(start_dim=1))

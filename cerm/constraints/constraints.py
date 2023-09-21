@@ -35,7 +35,11 @@ class Constraint(abc.ABC):
         self.__num_groups = num_groups
 
         # Vectorized computation jacobian
-        self._jac = torch.func.jacrev(self.__call__, argnums=0)
+        # self._jac = torch.func.jacrev(self.__call__, argnums=0)
+
+        self.f_per_sample = lambda x: self.__call__(x.unsqueeze(0)).squeeze(0)
+        self.jac_per_sample = torch.func.jacrev(self.f_per_sample, argnums=0)
+        self._jac = torch.func.vmap(self.jac_per_sample)
 
     @property
     def num_params(self) -> int:
@@ -85,7 +89,8 @@ class Constraint(abc.ABC):
         # zero blocks, but for now we do it anyway to avoid looping over the
         # num_group dimension
         dzero_map = self._jac(x)
+        return dzero_map
 
-        # Discard zero blocks and store Df applied to
-        group_idx = torch.arange(self.num_groups)
-        return dzero_map[group_idx, :, group_idx]
+        # # Discard zero blocks and store Df applied to
+        # group_idx = torch.arange(self.num_groups)
+        # return dzero_map[group_idx, :, group_idx]
