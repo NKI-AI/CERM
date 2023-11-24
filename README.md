@@ -7,7 +7,7 @@
 [![black](https://img.shields.io/badge/Code%20Style-Black-black.svg?labelColor=gray)](https://black.readthedocs.io/en/stable/)
 [![isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/) <br>
 
-CERM is a deep learning framework for training neural networks with constraints; the implementation details can be found in [REF]. Here we briefly explain how to use the general framework and run the examples accompanied with our NeurIPS 2023 submission "Constrained Empirical Risk Minimization".
+CERM is a deep learning framework for training neural networks with constraints. Here, we briefly explain how to use the general framework and run the examples accompanied with our [paper](https://arxiv.org/abs/2302.04729) "Constrained Empirical Risk Minimization".
 
  </div>
 
